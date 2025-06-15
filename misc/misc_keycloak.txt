@@ -1,0 +1,30 @@
+# to persist data (not in a user-accessible folder)
+docker volume create keycloak_data
+
+# to create a new container:
+./run_keycloak.bat
+
+# run existing container
+docker start keycloak
+
+# admin console
+http://localhost:8080/admin
+http://localhost:8080/admin/master/console/#/team_online
+
+
+Clients
+
+name: benyon_be
+UUID: 1898f570-5e3f-4890-95bf-8d226d083a16
+
+
+Users:
+
+hassaanq@gmail.com
+123
+
+mianfaizanxgp@gmail.com
+123
+
+usama@example.com
+123
