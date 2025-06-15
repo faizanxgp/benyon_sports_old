@@ -187,6 +187,28 @@ async def create_user(payload, access_token=None):
         raise e from e
 
 
+async def delete_user(username, access_token=None):
+    try:
+        all_users = (await get_all_users()).json()
+        user_id = None
+        for user in all_users:
+            if user.get("username") == username:
+                user_id = user.get("id")
+                break
+        if not user_id: raise Exception(f"user with username {username} not found")
+        headers, _ = await obtain_headers(access_token)
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(base_url + ep_delete_user.replace("[ENTER_USER_ID]", user_id), headers=headers)
+        
+        if response.status_code in [200, 201, 204]:
+            return "user deleted successfully"
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+        
+    except Exception as e:
+        raise e from e
+
+
 async def assign_client_role(payload, user_id: str, access_token=None):
     try:
         headers, _ = await obtain_headers()
@@ -297,4 +319,4 @@ async def users_status(access_token=None):
         role_name = user_roles[0] if user_roles else ""
         details[usernames[i]] = [emails[i], role_name, status]
     
-    return details ##
+    return details

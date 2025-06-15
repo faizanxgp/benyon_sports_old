@@ -130,13 +130,6 @@ async def get_user_role_details(user_id, access_token=None):
     except Exception as e:
         raise e from e
 
-async def delete_user(user_id, access_token=None):
-    headers, _ = await obtain_headers(access_token)
-    async with httpx.AsyncClient() as client:
-        response = await client.delete(base_url + ep_delete_user + user_id, headers=headers)
-
-    return response
-
 
 async def create_user_policy(payload, access_token=None):
     headers, _ = await obtain_headers(access_token)
