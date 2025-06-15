@@ -102,6 +102,25 @@ async def api_create_user(request: Request):
             raise HTTPException(status_code=500, detail=str(e))
         
 
+@keycloak_router.delete("/delete_user")
+@jwt_token("all_endpoints")
+async def api_create_user(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username")
+        response = await delete_user(username)
+        return {"detail": response}         
+    
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"delete_user. error: {tb_str}")
+        
+        if isinstance (e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
+        
+        
 @keycloak_router.post("/assign_role")
 @jwt_token("")
 async def api_assign_role(request: Request):
