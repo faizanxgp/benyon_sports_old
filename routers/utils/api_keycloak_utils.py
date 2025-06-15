@@ -297,4 +297,4 @@ async def users_status(access_token=None):
         role_name = user_roles[0] if user_roles else ""
         details[usernames[i]] = [emails[i], role_name, status]
     
-    return details
+    return details ##
