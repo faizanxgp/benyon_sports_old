@@ -1,0 +1,739 @@
+{
+	"info": {
+		"_postman_id": "de128802-e5c7-48a1-855c-ce82d252ad8a",
+		"name": "benyon_sports",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44462453"
+	},
+	"item": [
+		{
+			"name": "files",
+			"item": [
+				{
+					"name": "dir_contents",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "docs/test_folder",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/dir_contents",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"dir_contents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search_files",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "search_str",
+									"value": "sample",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/search_files",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"search_files"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "file_preview",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"const base64Image = jsonData.detail;\r",
+									"\r",
+									"const template = `\r",
+									"  <div>\r",
+									"    <p><strong>Preview:</strong></p>\r",
+									"    <img src=\"data:image/png;base64,{{base64Image}}\" style=\"max-width: 100%;\"/>\r",
+									"  </div>\r",
+									"`;\r",
+									"\r",
+									"pm.visualizer.set(template, { base64Image });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "docs/sample_image.png",
+									"type": "text"
+								},
+								{
+									"key": "path",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/file_preview",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"file_preview"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "upload",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"const base64Image = jsonData.details;\r",
+									"\r",
+									"const template = `\r",
+									"  <div>\r",
+									"    <p><strong>Preview:</strong></p>\r",
+									"    <img src=\"data:image/png;base64,{{base64Image}}\" style=\"max-width: 100%;\"/>\r",
+									"  </div>\r",
+									"`;\r",
+									"\r",
+									"pm.visualizer.set(template, { base64Image });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/DELL/Documents/keycloak/misc_keycloak.txt"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/DELL/Documents/keycloak/keycloak_LOCAL.postman_collection.json"
+								},
+								{
+									"key": "path",
+									"value": "docs",
+									"type": "text"
+								},
+								{
+									"key": "folder",
+									"value": "abc_dir",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/upload",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"upload"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_dir",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "abc_dir1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/create_dir",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"create_dir"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"const base64Image = jsonData.details;\r",
+									"\r",
+									"const template = `\r",
+									"  <div>\r",
+									"    <p><strong>Preview:</strong></p>\r",
+									"    <img src=\"data:image/png;base64,{{base64Image}}\" style=\"max-width: 100%;\"/>\r",
+									"  </div>\r",
+									"`;\r",
+									"\r",
+									"pm.visualizer.set(template, { base64Image });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "abc_dir",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/delete",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"delete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "download",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "docs/sample_image.png",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/download",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"download"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "keycloak",
+			"item": [
+				{
+					"name": "create_user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"requiredActions\":[],\r\n    \"emailVerified\":true,\r\n    \"username\":\"test_user3\",\r\n    \"email\":\"user@test3.com\",\r\n    \"firstName\":\"abc\",\r\n    \"lastName\":\"def\",\r\n    \"groups\":[],\r\n    \"attributes\":{\"profile_pic_path\": [\"https://example.com/images/profile.jpg\"]},\r\n    \"role\": \"admin\",\r\n    \"enabled\":true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/create_user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"create_user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "assign_role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\":\"test_user3\",\r\n    \"role\": \"admin\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/assign_role",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"assign_role"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "remove_role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\":\"test_user3\",\r\n    \"role\": \"admin\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/remove_role",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"remove_role"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "retrieve_user_details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"test_user2\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/retrieve_user_details",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"retrieve_user_details"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "reset_password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"type\": \"password\",\r\n    \"value\": \"123\",\r\n    \"temporary\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/reset_password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"reset_password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "forgot_password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/forgot_password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"forgot_password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_user_details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"first_name\",\r\n    \"lastName\": \"hahaLastName\",\r\n    \"email\": \"huhuhaha@example.com\",\r\n    \"attributes\":{\"profile_pic_path\": [\"see_this_path\"]},\r\n    \"enabled\": true\r\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/update_user_details",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"update_user_details"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "logout_user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/logout_user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"logout_user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "users_status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/users_status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"users_status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "root",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
