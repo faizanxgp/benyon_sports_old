@@ -1,0 +1,933 @@
+{
+	"info": {
+		"_postman_id": "74829984-5002-466f-a01d-eee0201a4061",
+		"name": "ben",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "36997565",
+		"_collection_link": "https://the-vw-musketeers.postman.co/workspace/My-Workspace~17740476-91c5-4ac7-89a0-b4f416284eb9/collection/36997565-74829984-5002-466f-a01d-eee0201a4061?action=share&source=collection_link&creator=36997565"
+	},
+	"item": [
+		{
+			"name": "files",
+			"item": [
+				{
+					"name": "dir_contents",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "/docs/abc_dir",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/dir_contents",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"dir_contents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search_files",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "search_str",
+									"value": "sample",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/search_files",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"search_files"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "file_preview",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"const base64Image = jsonData.detail;\r",
+									"\r",
+									"const template = `\r",
+									"  <div>\r",
+									"    <p><strong>Preview:</strong></p>\r",
+									"    <img src=\"data:image/png;base64,{{base64Image}}\" style=\"max-width: 100%;\"/>\r",
+									"  </div>\r",
+									"`;\r",
+									"\r",
+									"pm.visualizer.set(template, { base64Image });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "docs/Math Worksheets practice.pdf",
+									"type": "text"
+								},
+								{
+									"key": "path",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/file_preview",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"file_preview"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "upload",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"const base64Image = jsonData.details;\r",
+									"\r",
+									"const template = `\r",
+									"  <div>\r",
+									"    <p><strong>Preview:</strong></p>\r",
+									"    <img src=\"data:image/png;base64,{{base64Image}}\" style=\"max-width: 100%;\"/>\r",
+									"  </div>\r",
+									"`;\r",
+									"\r",
+									"pm.visualizer.set(template, { base64Image });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"disabled": true
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/hassaan.qayyum.CORP/Downloads/English Handwriting Practice.pdf"
+								},
+								{
+									"key": "path",
+									"value": "docs",
+									"type": "text"
+								},
+								{
+									"key": "folder",
+									"value": "abc_dir",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/upload",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"upload"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_dir",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "docs",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/create_dir",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"create_dir"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"const base64Image = jsonData.details;\r",
+									"\r",
+									"const template = `\r",
+									"  <div>\r",
+									"    <p><strong>Preview:</strong></p>\r",
+									"    <img src=\"data:image/png;base64,{{base64Image}}\" style=\"max-width: 100%;\"/>\r",
+									"  </div>\r",
+									"`;\r",
+									"\r",
+									"pm.visualizer.set(template, { base64Image });\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "docs/abc_dir",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/delete",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"delete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "download",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "path",
+									"value": "sample.txt",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/files/download_file",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"files",
+								"download_file"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "keycloak",
+			"item": [
+				{
+					"name": "create_user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"requiredActions\":[],\r\n    \"emailVerified\":true,\r\n    \"username\":\"test_user3\",\r\n    \"email\":\"user@test3.com\",\r\n    \"firstName\":\"abc\",\r\n    \"lastName\":\"def\",\r\n    \"groups\":[],\r\n    \"attributes\":{\"profile_pic_path\": [\"https://example.com/images/profile.jpg\"]},\r\n    \"role\": \"admin\",\r\n    \"enabled\":true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/create_user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"create_user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "assign_role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\":\"test_user3\",\r\n    \"role\": \"admin\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/assign_role",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"assign_role"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "remove_role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\":\"test_user3\",\r\n    \"role\": \"admin\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/remove_role",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"remove_role"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_permission",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\":\"test_user3\",\r\n    \"role\": \"admin\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/delete_permission",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"delete_permission"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "retrieve_user_details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"hassaanq@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/retrieve_user_details",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"retrieve_user_details"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "reset_password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"type\": \"password\",\r\n    \"value\": \"123\",\r\n    \"temporary\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/reset_password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"reset_password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "forgot_password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/forgot_password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"forgot_password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_user_details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"first_name\",\r\n    \"lastName\": \"hahaLastName\",\r\n    \"email\": \"huhuhaha@example.com\",\r\n    \"attributes\":{\"profile_pic_path\": [\"see_this_path\"]},\r\n    \"enabled\": true\r\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/update_user_details",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"update_user_details"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "assign_permission",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"resource_names\": [\"test_resource\", \"test_resource2\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/assign_permission",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"assign_permission"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unassign_permission",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"resource_names\": [\"test_resource\", \"test_resource2\"],\r\n    \"username\": \"hassaanq@gmail.com\"\r\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/unassign_permission",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"unassign_permission"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "logout_user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJQTGFsUUNtZUdKZGE0Q21OdjhSeU1ocjFibXFyU1hNZG1zdFZ2aFBLQ2hJIn0.eyJleHAiOjE3NDk5OTM0MDMsImlhdCI6MTc0OTk3NTQwMywianRpIjoib25ydHJvOjNmMzEzYWZjLWU2MGUtNGU2ZC05OTc1LWMyMGQ0NzNkYjYzZCIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MC9yZWFsbXMvdGVhbV9vbmxpbmUiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiNzViODRhMDQtMGU5MS00OGRlLTk2Y2EtOWZkYWE2YTUzNDBhIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYmVueW9uX2ZlIiwic2lkIjoiN2RkZDNhMDYtMWY5ZS00MTA3LWFiNDItMmI2NTljYzNjZTA3IiwiYWNyIjoiMSIsImFsbG93ZWQtb3JpZ2lucyI6WyIvKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJkZWZhdWx0LXJvbGVzLXRlYW1fb25saW5lIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJiZW55b25fZmUiOnsicm9sZXMiOlsiYWRtaW4iXX0sImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIGVtYWlsIHByb2ZpbGUiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6ImFiYyBkZWYiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ0ZXN0X3VzZXIzIiwiZ2l2ZW5fbmFtZSI6ImFiYyIsImZhbWlseV9uYW1lIjoiZGVmIiwiZW1haWwiOiJ1c2VyQHRlc3QzLmNvbSJ9.l7UFGzO_ZwrYmqctMS_Un886byzO_olbBOpG93t_K3Gnj4XShtSr2YuHziDEc2PgqX9VU1Jla4STQcQTUD-25KOZsNLnOKYBCnmu18YR3TwI87L4WmsctV-oOINp7oer_3hTaquuf2EtnzzspxDu1GM23sy56jrt9td374sI3Sz4ydiMhCcYIwZSk7-q06-6-npLrtuZXUuu7ceajdDTtZlVWvvR4rnjg6sJisRQXCvhPLs0PVuRfs-okODeHP8dc_k3L0h1AJSRbFuvkS_CH7281h6KZnAZD7Y-EYXS3lo_Rs6A7kciio9ygOdAQa3TlkiTKa_Wi6jXYqmTBN77Og",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/logout_user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"logout_user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "users_status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/users_status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"users_status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_user_roles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/keycloak/get_user_roles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"keycloak",
+								"get_user_roles"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "root",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}",
+					"host": [
+						"{{base_url}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
