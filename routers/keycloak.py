@@ -28,7 +28,7 @@ async def api_delete_permission(request: Request):
     
     except Exception as e:
         tb_str = traceback.format_exc()
-        print(f"assign_permission. error: {tb_str}")
+        print(f"delete_permission. error: {tb_str}")
         
         if isinstance (e, HTTPException):
             raise e
@@ -48,7 +48,7 @@ async def api_unassign_permission(request: Request):
     
     except Exception as e:
         tb_str = traceback.format_exc()
-        print(f"assign_permission. error: {tb_str}")
+        print(f"unassign_permission. error: {tb_str}")
         
         if isinstance (e, HTTPException):
             raise e
@@ -61,7 +61,7 @@ async def api_unassign_permission(request: Request):
 async def api_assign_permission(request: Request):
     try:
         payload = await request.json()
-        resource_names, username = payload.get("resource_names"), request.state.email
+        resource_names, username = payload.get("resource_names"), payload.get("username")
         response = await assign_permission(resource_names, username)
         
         if response.status_code in [200, 201, 204]:

@@ -9,11 +9,20 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 # import ctypes
 # from ctypes import wintypes
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from routers.files import files_router
 from routers.keycloak import keycloak_router
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(files_router, prefix="/files", tags=["files"])
 app.include_router(keycloak_router, prefix="/keycloak", tags=["keycloak"])
@@ -25,4 +34,4 @@ def get_items():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8003, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=5000, reload=True)
