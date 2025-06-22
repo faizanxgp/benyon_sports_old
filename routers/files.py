@@ -93,6 +93,8 @@ async def api_dir_contents(request: Request):
     except HTTPException as he:
         raise he
     except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error retrieving dir contents of {path}: {tb_str}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

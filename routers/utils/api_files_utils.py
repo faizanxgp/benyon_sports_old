@@ -82,11 +82,12 @@ async def dir_contents(path: str, permissions):
         abs_path = os.path.normpath(os.path.join(base_dir, relative_path))
         p_abs_path = Path(abs_path)
         if not p_abs_path.is_dir(): raise HTTPException(status_code=404, detail="path does not exist")
+        print("permissions:", permissions)
         results = await dir_contents_details(abs_path, permissions)
         return results
     
     except Exception as e:
-        raise e
+        raise e from e
 
 
 async def create_dir(path: str):

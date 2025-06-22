@@ -157,6 +157,8 @@ async def create_user(payload, access_token=None):
         headers, _ = await obtain_headers(access_token)
         if role := payload.get("role"):
             del payload["role"]
+        if not payload.get("username"):
+            payload["username"] = payload.get("email")
         async with httpx.AsyncClient() as client:
             response = await client.post(base_url + ep_create_user, json=payload, headers=headers)
         
@@ -308,7 +310,8 @@ async def users_status(access_token=None):
     all_users = (await get_all_users()).json()
     print("all_users:", all_users)
     user_ids = [user.get("id") for user in all_users]
-    usernames = [user.get("firstName") + " " + user.get("lastName") for user in all_users]
+    usernames = [user.get("username") for user in all_users]
+    full_names = [user.get("firstName") + " " + user.get("lastName") for user in all_users]
     emails = [user.get("email") for user in all_users]
     
     details = {}
@@ -317,6 +320,6 @@ async def users_status(access_token=None):
         status = "active" if (len(active_sessions)>0) else "inactive"
         user_roles = await get_user_roles(id)
         role_name = user_roles[0] if user_roles else ""
-        details[usernames[i]] = [emails[i], role_name, status]
+        details[usernames[i]] = [full_names[i], emails[i], role_name, status]
     
     return details

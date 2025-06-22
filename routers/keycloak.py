@@ -295,7 +295,7 @@ async def api_update_user_details(request: Request):
         
 
 # This action will carried out by concerned user (non-admin)
-@keycloak_router.post("/logout_user")
+@keycloak_router.get("/logout_user")
 @jwt_token("")
 async def api_logout_user(request: Request):
     try:
