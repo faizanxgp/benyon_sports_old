@@ -161,7 +161,7 @@ async def api_get_user_roles(request: Request):
         return {"detail": role_names}
     except Exception as e:
         tb_str = traceback.format_exc()
-        print(f"assign_role. error: {tb_str}")
+        print(f"get_user_roles. error: {tb_str}")
         
         if isinstance (e, HTTPException):
             raise e
@@ -192,7 +192,7 @@ async def api_remove_role(request: Request):
     
     except Exception as e:
         tb_str = traceback.format_exc()
-        print(f"assign_role. error: {tb_str}")
+        print(f"remove_role. error: {tb_str}")
         
         if isinstance (e, HTTPException):
             raise e
