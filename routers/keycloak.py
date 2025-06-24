@@ -10,6 +10,7 @@ from PIL import Image
 import shutil
 from pathlib import Path
 import datetime
+import httpx
 
 from decorators.jwt import jwt_token
 from routers.utils.api_keycloak_utils import *
@@ -28,7 +29,7 @@ async def api_delete_permission(request: Request):
     
     except Exception as e:
         tb_str = traceback.format_exc()
-        print(f"assign_permission. error: {tb_str}")
+        print(f"delete_permission. error: {tb_str}")
         
         if isinstance (e, HTTPException):
             raise e
@@ -48,7 +49,7 @@ async def api_unassign_permission(request: Request):
     
     except Exception as e:
         tb_str = traceback.format_exc()
-        print(f"assign_permission. error: {tb_str}")
+        print(f"unassign_permission. error: {tb_str}")
         
         if isinstance (e, HTTPException):
             raise e
@@ -61,7 +62,7 @@ async def api_unassign_permission(request: Request):
 async def api_assign_permission(request: Request):
     try:
         payload = await request.json()
-        resource_names, username = payload.get("resource_names"), request.state.email
+        resource_names, username = payload.get("resource_names"), payload.get("username")
         response = await assign_permission(resource_names, username)
         
         if response.status_code in [200, 201, 204]:
@@ -161,7 +162,7 @@ async def api_get_user_roles(request: Request):
         return {"detail": role_names}
     except Exception as e:
         tb_str = traceback.format_exc()
-        print(f"assign_role. error: {tb_str}")
+        print(f"get_user_roles. error: {tb_str}")
         
         if isinstance (e, HTTPException):
             raise e
@@ -192,7 +193,7 @@ async def api_remove_role(request: Request):
     
     except Exception as e:
         tb_str = traceback.format_exc()
-        print(f"assign_role. error: {tb_str}")
+        print(f"remove_role. error: {tb_str}")
         
         if isinstance (e, HTTPException):
             raise e
@@ -295,7 +296,7 @@ async def api_update_user_details(request: Request):
         
 
 # This action will carried out by concerned user (non-admin)
-@keycloak_router.post("/logout_user")
+@keycloak_router.get("/logout_user")
 @jwt_token("")
 async def api_logout_user(request: Request):
     try:
@@ -332,3 +333,67 @@ async def api_users_status(request: Request):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+@keycloak_router.post("/replace_user_role")
+@jwt_token("")
+async def api_replace_user_role(request: Request):
+    try:
+        data = await request.json()
+        username, new_role = data.get("username"), data.get("role")
+        
+        # Get user details
+        user_details = (await retrieve_user_details(username)).json()
+        if not user_details: 
+            raise HTTPException(status_code=404, detail="user not found")
+        user_id = user_details[0].get("id")
+        
+        # Get all current roles for the user
+        current_roles = await get_user_roles(user_id)
+        
+        # Remove all existing roles
+        if current_roles:
+            # Get role details for removal
+            roles_to_remove = []
+            for role_name in current_roles:
+                try:
+                    role_details = (await get_client_role(role_name)).json()
+                    roles_to_remove.append({
+                        "id": role_details.get("id"),
+                        "name": role_name
+                    })
+                except Exception as role_error:
+                    print(f"Warning: Could not get details for role {role_name}: {role_error}")
+                    continue
+            
+            # Remove all roles in one call
+            if roles_to_remove:
+                remove_response = await remove_client_role(roles_to_remove, user_id)
+                if remove_response.status_code not in [200, 201, 204]:
+                    raise HTTPException(status_code=remove_response.status_code, 
+                                      detail=f"Failed to remove existing roles: {remove_response.text}")
+        
+        # Assign the new role
+        new_role_id = (await get_client_role(new_role)).json().get("id")
+        if not new_role_id:
+            raise HTTPException(status_code=404, detail=f"Role '{new_role}' not found")
+            
+        new_role_payload = [{
+            "id": new_role_id,
+            "name": new_role
+        }]
+        assign_response = await assign_client_role(new_role_payload, user_id)
+        
+        if assign_response.status_code in [200, 201, 204]:
+            return {"detail": f"All roles replaced. User now has role: {new_role}"}
+        else:
+            raise HTTPException(status_code=assign_response.status_code, 
+                              detail=f"Failed to assign new role: {assign_response.text}")
+    
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"replace_user_role. error: {tb_str}")
+        
+        if isinstance(e, HTTPException):
+            raise e
+        else:            raise HTTPException(status_code=500, detail=str(e))

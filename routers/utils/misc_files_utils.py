@@ -125,8 +125,7 @@ def search_files_and_folders(root, query, case_sensitive=False):
     """
     Recursively search under `root` for any file or folder whose name contains `query`.
     Returns a list of full paths to matching files/folders.
-    
-    - root:      string path where search begins (e.g. "." or "C:\\Users\\...")
+      - root:      string path where search begins (e.g. "." or "C:\\Users\\...")
     - query:     substring to look for in file/folder names
     - case_sensitive: if False (default), perform a case-insensitive match
     """
@@ -139,7 +138,12 @@ def search_files_and_folders(root, query, case_sensitive=False):
         for dirname in dirnames:
             name_to_check = dirname if case_sensitive else dirname.lower()
             if (query in dirname) if case_sensitive else (query_lower in name_to_check):
-                matches.append(os.path.join(dirpath, dirname))
+                found_path = os.path.join(dirpath, dirname)
+                base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
+                relative_path = os.path.relpath(found_path, base_dir)
+                # Convert backslashes to forward slashes for cross-platform compatibility
+                relative_path = relative_path.replace(os.sep, '/')
+                matches.append(relative_path)
 
         # check files
         for filename in filenames:
@@ -148,6 +152,8 @@ def search_files_and_folders(root, query, case_sensitive=False):
                 found_path = os.path.join(dirpath, filename)
                 base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
                 relative_path = os.path.relpath(found_path, base_dir)
+                # Convert backslashes to forward slashes for cross-platform compatibility
+                relative_path = relative_path.replace(os.sep, '/')
                 matches.append(relative_path)
 
     return matches
