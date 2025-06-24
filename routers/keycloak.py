@@ -396,5 +396,4 @@ async def api_replace_user_role(request: Request):
         
         if isinstance(e, HTTPException):
             raise e
-        else:
-            raise HTTPException(status_code=500, detail=str(e))
+        else:            raise HTTPException(status_code=500, detail=str(e))
