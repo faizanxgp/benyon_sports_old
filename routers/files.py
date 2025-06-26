@@ -147,6 +147,7 @@ async def api_upload_multiple_folders(request: Request):
     try:
         data = await request.form()
         directory_structure = data.get("directory_structure")
+        
         files = data.getlist("file")
         
         if not directory_structure:
@@ -155,10 +156,13 @@ async def api_upload_multiple_folders(request: Request):
         if not files:
             raise HTTPException(status_code=400, detail="No files uploaded")
         
+        
+        
         result = await upload_multiple_folders(files, directory_structure)
         return JSONResponse(content={"detail": result})
     
     except HTTPException as he:
+        print(f"Error in upload_multiple endpoint: {he}")
         raise he
     except Exception as e:
         tb_str = traceback.format_exc()

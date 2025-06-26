@@ -191,6 +191,7 @@ async def upload_multiple_folders(files, directory_structure_json: str):
         
         # Parse the directory structure
         directory_structure = json.loads(directory_structure_json)
+        print("directory_structure:", directory_structure)
           # Create a mapping of file names to file objects for quick lookup
         file_map = {file.filename: file for file in files}
         
