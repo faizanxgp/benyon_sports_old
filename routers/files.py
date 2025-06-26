@@ -110,3 +110,57 @@ async def api_file_preview(request: Request):
         tb_str = traceback.format_exc()
         print(f"Error processing file {path}: {tb_str}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/upload_multiple")
+@jwt_token("all_endpoints")
+async def api_upload_multiple_folders(request: Request):
+    """
+    Upload multiple folders with complex directory structures.
+    
+    Expects:
+    - Multiple files attached via form-data
+    - A 'directory_structure' field containing a serialized JSON object
+      describing the intended directory structure
+    
+    Example directory_structure JSON:
+    {
+        "folders": {
+            "documents": {
+                "folders": {
+                    "pdfs": {
+                        "files": ["doc1.pdf", "doc2.pdf"]
+                    },
+                    "images": {
+                        "files": ["img1.jpg", "img2.png"]
+                    }
+                },
+                "files": ["readme.txt"]
+            },
+            "media": {
+                "files": ["video1.mp4", "audio1.mp3"]
+            }
+        },
+        "files": ["root_file.txt"]
+    }
+    """
+    try:
+        data = await request.form()
+        directory_structure = data.get("directory_structure")
+        files = data.getlist("file")
+        
+        if not directory_structure:
+            raise HTTPException(status_code=400, detail="directory_structure field is required")
+        
+        if not files:
+            raise HTTPException(status_code=400, detail="No files uploaded")
+        
+        result = await upload_multiple_folders(files, directory_structure)
+        return JSONResponse(content={"detail": result})
+    
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error in upload_multiple endpoint: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))

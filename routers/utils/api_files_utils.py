@@ -10,6 +10,7 @@ import base64
 from io import BytesIO
 import fitz
 from PIL import Image
+import json
 
 from routers.utils.misc_files_utils import *
 from routers.utils.misc_keycloak_utils import *
@@ -172,3 +173,50 @@ async def upload_files(folder: str, files, path: str):
         tb_str = traceback.format_exc()
         print(f"Error in upload_files: {tb_str}")
         raise e from e
+
+
+async def upload_multiple_folders(files, directory_structure_json: str):
+    """
+    Upload multiple folders with complex directory structures.
+    
+    Args:
+        files: List of uploaded files
+        directory_structure_json: Serialized JSON containing the directory structure
+        
+    Returns:
+        Dictionary with upload results
+    """
+    try:
+        base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
+        
+        # Parse the directory structure
+        directory_structure = json.loads(directory_structure_json)
+          # Create a mapping of file names to file objects for quick lookup
+        file_map = {file.filename: file for file in files}
+        
+        uploaded_files = []
+        created_dirs = []
+        
+        # Recursively process the directory structure
+        await process_directory_structure(
+            directory_structure, 
+            base_dir, 
+            "", 
+            file_map, 
+            uploaded_files, 
+            created_dirs
+        )
+        
+        return {
+            "uploaded_files": uploaded_files,
+            "created_directories": created_dirs,
+            "total_files": len(uploaded_files),
+            "total_directories": len(created_dirs)
+        }
+        
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON in directory_structure: {str(e)}")
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error in upload_multiple_folders: {tb_str}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
