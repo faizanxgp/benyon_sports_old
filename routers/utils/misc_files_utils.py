@@ -3,6 +3,8 @@ from ctypes import wintypes
 import os
 from pathlib import Path
 import datetime
+import shutil
+import traceback
 
 
 def _get_owner_windows(path: str) -> str:
@@ -125,9 +127,9 @@ def search_files_and_folders(root, query, case_sensitive=False):
     """
     Recursively search under `root` for any file or folder whose name contains `query`.
     Returns a list of full paths to matching files/folders.
-      - root:      string path where search begins (e.g. "." or "C:\\Users\\...")
-    - query:     substring to look for in file/folder names
-    - case_sensitive: if False (default), perform a case-insensitive match
+    
+    - root:      string path where search begins (e.g. "." or "C:\\Users\\...")
+    - query:     substring to look for in file/folder names    - case_sensitive: if False (default), perform a case-insensitive match
     """
     matches = []
     if not case_sensitive:
@@ -226,3 +228,97 @@ async def dir_contents_details(abs_path, permissions):
     
     except Exception as e:
         raise e from e
+
+
+async def process_directory_structure(structure, base_dir, current_path, file_map, uploaded_files, created_dirs):
+    """
+    Recursively process directory structure and create directories/files.
+    
+    Expected structure format:
+    {
+        "folders": {
+            "folder_name": {
+                "folders": {...},  # nested folders
+                "files": ["file1.txt", "file2.pdf"]  # files in this folder
+            }
+        },
+        "files": ["root_file.txt"]  # files in root
+    }
+    """
+    try:
+        # Import here to avoid circular imports
+        from routers.utils.misc_keycloak_utils import create_resource
+        
+        # Process files in current directory
+        if "files" in structure and structure["files"]:
+            for filename in structure["files"]:
+                if filename in file_map:
+                    file_obj = file_map[filename]
+                    
+                    # Create the full path for the file
+                    relative_file_path = os.path.join(current_path, filename) if current_path else filename
+                    abs_file_path = os.path.normpath(os.path.join(base_dir, relative_file_path))
+                    
+                    # Ensure directory exists
+                    os.makedirs(os.path.dirname(abs_file_path), exist_ok=True)
+                    
+                    # Save the file
+                    with open(abs_file_path, "wb") as buffer:
+                        shutil.copyfileobj(file_obj.file, buffer)
+                    
+                    # Create resource in Keycloak
+                    relative_file_location = str(Path(relative_file_path).as_posix())
+                    resource_payload = {
+                        "name": relative_file_location,
+                        "displayName": relative_file_location,
+                        "type": "file",
+                        "icon_uri": "",
+                        "ownerManagedAccess": False,
+                        "attributes": {},
+                        "scopes": []
+                    }
+                    await create_resource(resource_payload)
+                    
+                    uploaded_files.append(relative_file_location)
+                else:
+                    print(f"Warning: File {filename} specified in structure but not found in uploaded files")
+        
+        # Process folders
+        if "folders" in structure and structure["folders"]:
+            for folder_name, folder_structure in structure["folders"].items():
+                # Create the new path
+                new_path = os.path.join(current_path, folder_name) if current_path else folder_name
+                abs_dir_path = os.path.normpath(os.path.join(base_dir, new_path))
+                
+                # Create directory
+                os.makedirs(abs_dir_path, exist_ok=True)
+                
+                # Create resource in Keycloak for directory
+                relative_dir_path = str(Path(new_path).as_posix())
+                resource_payload = {
+                    "name": relative_dir_path,
+                    "displayName": relative_dir_path,
+                    "type": "dir",
+                    "icon_uri": "",
+                    "ownerManagedAccess": False,
+                    "attributes": {},
+                    "scopes": []
+                }
+                await create_resource(resource_payload)
+                
+                created_dirs.append(relative_dir_path)
+                
+                # Recursively process subdirectory
+                await process_directory_structure(
+                    folder_structure, 
+                    base_dir, 
+                    new_path, 
+                    file_map, 
+                    uploaded_files, 
+                    created_dirs
+                )
+                
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error processing directory structure at path '{current_path}': {tb_str}")
+        raise e
