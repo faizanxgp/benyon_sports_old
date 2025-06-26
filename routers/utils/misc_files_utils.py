@@ -161,21 +161,87 @@ def search_files_and_folders(root, query, case_sensitive=False):
     return matches
 
 
+def has_hierarchical_permission(target_path, permissions):
+    """
+    Check if the target_path has permission based on hierarchical access.
+    A user with permission to a parent directory should have access to all subdirectories and files.
+    
+    Args:
+        target_path: The path to check permission for (e.g., 'backup/file.txt')
+        permissions: List of permission paths (e.g., ['.', 'docs'])
+    
+    Returns:
+        bool: True if access is granted, False otherwise
+    """
+    # Normalize the target path
+    if target_path == '.':
+        target_path = ''
+    
+    for permission in permissions:
+        # Normalize permission path
+        if permission == '.':
+            permission = ''
+        
+        # Check exact match
+        if target_path == permission:
+            return True
+        
+        # Check if permission is a parent directory of target_path
+        if permission == '':  # Root permission grants access to everything
+            return True
+        elif target_path.startswith(permission + '/'):
+            return True
+        
+        # Check if target_path is within the permission directory
+        # This handles cases where permission might be 'docs' and target is 'docs/subfolder/file.txt'
+        if permission != '' and (target_path == permission or target_path.startswith(permission + '/')):
+            return True
+    
+    return False
+
+
 async def dir_contents_details(abs_path, permissions):
     try:
         # permissions
         base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
         relative_path = str(Path(os.path.relpath(abs_path, base_dir)).as_posix())
         print('relative_path:', relative_path)
-        relevant_permissions = [permission for permission in permissions if relative_path in permission]
-        print('relevant_permissions:', relevant_permissions)
-        # if relative_path in relevant_permissions: blanket_permission = True
+        print('permissions:', permissions)
+        
+        # Modified directory-level permission check:
+        # Allow access to a directory if:
+        # 1. User has direct permission to this directory, OR
+        # 2. User has permission to any subdirectory within this directory (for browsing)
+        def can_access_directory(dir_path, perms):
+            # Direct permission to this directory
+            if has_hierarchical_permission(dir_path, perms):
+                return True
+            
+            # Check if user has permission to any subdirectory within this directory
+            # This allows browsing parent directories to reach permitted subdirectories
+            if dir_path == ".":  # Root directory case
+                for perm in perms:
+                    if perm != "." and not perm.startswith("../"):  # Any non-root permission means they need to browse root
+                        return True
+            else:
+                for perm in perms:
+                    if perm.startswith(dir_path + "/"):  # Permission to subdirectory
+                        return True
+            
+            return False
+        
+        # Check if user can access this directory
+        if not can_access_directory(relative_path, permissions):
+            return []  # Return empty list if no permission to access this directory
         
         results = []
         for entry in os.listdir(abs_path):
-            entry_relative_path = f"{relative_path}/{entry}"
+            entry_relative_path = f"{relative_path}/{entry}" if relative_path != '.' else entry
             print('entry_relative_path:', entry_relative_path)
-            if (not (entry_relative_path in relevant_permissions)) and (not (relative_path in relevant_permissions)): continue
+            
+            # Use hierarchical permission checking
+            if not has_hierarchical_permission(entry_relative_path, permissions):
+                continue
             entry_path = os.path.join(abs_path, entry)
             p = Path(entry_path)
             try:
