@@ -203,3 +203,37 @@ async def delete_resource(resource_id, access_token=None):
         response = await client.delete(base_url + ep_delete_resource + resource_id, headers=headers)
 
     return response
+
+
+async def get_events(user_id=None, event_type=None, access_token=None):
+    """
+    Retrieve events from Keycloak with optional filtering by user_id and event_type.
+    
+    Args:
+        user_id (str, optional): Filter events by user ID
+        event_type (str, optional): Filter events by event type (e.g., "LOGIN")
+        access_token (str, optional): Access token for authentication
+        
+    Returns:
+        httpx.Response: Response containing the events data
+    """
+    try:
+        headers, _ = await obtain_headers(access_token)
+        
+        # Build query parameters
+        params = {}
+        if user_id:
+            params["userId"] = user_id
+        if event_type:
+            params["type"] = event_type
+            
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                base_url + ep_events, 
+                params=params, 
+                headers=headers
+            )
+
+        return response
+    except Exception as e:
+        raise e from e

@@ -39,3 +39,4 @@ ep_get_all_permissions = f"/admin/realms/{realm_name}/clients/{backend_client_id
 ep_resources_in_permission = f"/admin/realms/{realm_name}/clients/{backend_client_id}/authz/resource-server/policy/[ENTER_PERMISSION_ID]/resources"
 ep_update_permission = f"/admin/realms/{realm_name}/clients/{backend_client_id}/authz/resource-server/permission/resource/[ENTER_PERMISSION_ID]"
 ep_delete_permission = f"/admin/realms/{realm_name}/clients/{backend_client_id}/authz/resource-server/permission/[ENTER_PERMISSION_ID]"
+ep_events = f"/admin/realms/{realm_name}/events"
