@@ -443,26 +443,22 @@ async def api_toggle_user_status(request: Request):
 @jwt_token("all_endpoints")
 async def api_login_events(request: Request):
     """
-    API endpoint to retrieve LOGIN events for a specific user.
+    API endpoint to retrieve LOGIN events for a specific user or all users.
     
     Expected JSON payload:
     {
-        "username": "user@example.com"
+        "username": "user@example.com"  # Optional - if not provided, returns events for all users
     }
     
-    Returns:
-    {
-        "user_id": "uuid-string",
-        "username": "user@example.com", 
-        "login_events": [...]
-    }
+    Returns login events for the specified user or all users if no username is provided.
     """
     try:
-        payload = await request.json()
-        username = payload.get("username")
-        
-        if not username:
-            raise HTTPException(status_code=400, detail="Username is required")
+        try:
+            payload = await request.json()
+        except:
+            payload = {}  # Handle empty request body
+            
+        username = payload.get("username") if payload else None
         
         response = await get_login_events(username)
         

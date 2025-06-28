@@ -223,7 +223,7 @@ async def get_events(user_id=None, event_type=None, access_token=None):
         # Build query parameters
         params = {}
         if user_id:
-            params["userId"] = user_id
+            params["user"] = user_id  # Changed from "userId" to "user"
         if event_type:
             params["type"] = event_type
             
