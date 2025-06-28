@@ -431,18 +431,22 @@ async def get_login_events(username: str = None, access_token=None):
         events_data = events_response.json()
         
         if username:
-            # For specific user - existing logic
-            timestamps = [event.get("time") for event in events_data if event.get("time")]
-            timestamps.sort()  # Sort in chronological order (oldest to newest)
+            # For specific user - filter events from past 24 hours
+            from datetime import datetime, timedelta
             
-            max_entries = 3
-            timestamps = timestamps[-max_entries:] if len(timestamps) > max_entries else timestamps
+            # Calculate 24 hours ago timestamp in milliseconds
+            now = datetime.now()
+            twenty_four_hours_ago = now - timedelta(hours=24)
+            cutoff_timestamp = int(twenty_four_hours_ago.timestamp() * 1000)
             
-            # Convert timestamps to ISO format for better readability and easy parsing
-            from datetime import datetime
+            # Filter events from past 24 hours
+            recent_timestamps = [event.get("time") for event in events_data 
+                               if event.get("time") and event.get("time") >= cutoff_timestamp]
+            recent_timestamps.sort()  # Sort in chronological order (oldest to newest)
+            
+            # Convert timestamps to ISO format
             formatted_timestamps = []
-            for timestamp in timestamps:
-                # Convert milliseconds to seconds and format as ISO string without decimal seconds
+            for timestamp in recent_timestamps:
                 dt = datetime.fromtimestamp(timestamp / 1000)
                 iso_format = dt.strftime('%Y-%m-%dT%H:%M:%S')
                 formatted_timestamps.append(iso_format)
@@ -454,8 +458,13 @@ async def get_login_events(username: str = None, access_token=None):
             
             return response_list
         else:
-            # For all users - collect all events and apply total max_entries limit
-            from datetime import datetime
+            # For all users - collect all events from past 24 hours
+            from datetime import datetime, timedelta
+            
+            # Calculate 24 hours ago timestamp in milliseconds
+            now = datetime.now()
+            twenty_four_hours_ago = now - timedelta(hours=24)
+            cutoff_timestamp = int(twenty_four_hours_ago.timestamp() * 1000)
             
             # Get all users to map user IDs to usernames
             all_users_response = await get_all_users(access_token)
@@ -466,10 +475,11 @@ async def get_login_events(username: str = None, access_token=None):
             all_users = all_users_response.json()
             user_id_to_username = {user.get("id"): user.get("username") for user in all_users if user.get("id") and user.get("username")}
             
-            # Collect all events with usernames and timestamps
+            # Collect all events from past 24 hours with usernames and timestamps
             all_events = []
             for event in events_data:
-                if event.get("time") and event.get("userId"):
+                if (event.get("time") and event.get("userId") and 
+                    event.get("time") >= cutoff_timestamp):
                     user_id = event.get("userId")
                     username = user_id_to_username.get(user_id)
                     if username:  # Only include if username is found
@@ -480,10 +490,6 @@ async def get_login_events(username: str = None, access_token=None):
             
             # Sort all events chronologically (oldest to newest)
             all_events.sort(key=lambda x: x["timestamp"])
-            
-            # Apply total max_entries limit and keep the most recent ones
-            max_entries = 3
-            all_events = all_events[-max_entries:] if len(all_events) > max_entries else all_events
             
             # Convert to required format and convert timestamps to ISO format
             response_list = []
