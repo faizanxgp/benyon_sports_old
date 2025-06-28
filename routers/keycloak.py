@@ -437,3 +437,42 @@ async def api_toggle_user_status(request: Request):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+@keycloak_router.post("/login_events")
+@jwt_token("all_endpoints")
+async def api_login_events(request: Request):
+    """
+    API endpoint to retrieve LOGIN events for a specific user.
+    
+    Expected JSON payload:
+    {
+        "username": "user@example.com"
+    }
+    
+    Returns:
+    {
+        "user_id": "uuid-string",
+        "username": "user@example.com", 
+        "login_events": [...]
+    }
+    """
+    try:
+        payload = await request.json()
+        username = payload.get("username")
+        
+        if not username:
+            raise HTTPException(status_code=400, detail="Username is required")
+        
+        response = await get_login_events(username)
+        
+        return response
+    
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"login_events. error: {tb_str}")
+        
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
