@@ -50,7 +50,7 @@ async def file_preview(path):
         raise e from e
     
 
-async def download_file(path: str):
+async def download_file(path: str, user_id: str = None, username: str = None):
     try:
         base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
         relative_path = path.lstrip("/\\")
@@ -58,6 +58,10 @@ async def download_file(path: str):
         download_file_path = Path(abs_path).resolve()
         if not download_file_path.is_file():
             raise HTTPException(status_code=404, detail=f"File not found: {download_file_path}")
+        
+        # Update user's recent_files attribute in Keycloak if user info is provided
+        if user_id and username:
+            await update_user_recent_file_attribute(user_id, username, path)
         
         return FileResponse(
         path=download_file_path,

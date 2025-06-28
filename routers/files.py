@@ -9,7 +9,8 @@ import fitz
 from PIL import Image
 import shutil
 from pathlib import Path
-import datetime
+from datetime import datetime
+import csv
 
 from decorators.jwt import jwt_token
 from routers.utils.api_files_utils import *
@@ -37,7 +38,12 @@ async def api_download_file(request: Request):
     try:
         data = await request.form()
         path = data.get("path")
-        return await download_file(path)
+        username = request.state.email
+        user_id = request.state.user_id
+        
+        file_response = await download_file(path, user_id, username)
+        
+        return file_response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -155,8 +161,6 @@ async def api_upload_multiple_folders(request: Request):
         
         if not files:
             raise HTTPException(status_code=400, detail="No files uploaded")
-        
-        
         
         result = await upload_multiple_folders(files, directory_structure)
         return JSONResponse(content={"detail": result})

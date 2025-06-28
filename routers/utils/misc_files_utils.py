@@ -388,3 +388,67 @@ async def process_directory_structure(structure, base_dir, current_path, file_ma
         tb_str = traceback.format_exc()
         print(f"Error processing directory structure at path '{current_path}': {tb_str}")
         raise e
+
+
+async def update_user_recent_file_attribute(user_id: str, username: str, file_path: str):
+    """
+    Update the user's 'recent_files' attribute in Keycloak with the downloaded file path.
+    Appends to existing recent_files list if it exists, otherwise creates a new list.
+    """
+    from routers.utils.api_keycloak_utils import update_user_details, retrieve_user_details
+    
+    try:
+        # First, retrieve current user details to get existing attributes
+        user_response = await retrieve_user_details(username)
+        
+        if user_response.status_code not in [200, 201]:
+            print(f"Error retrieving user details from Keycloak: {user_response.status_code} - {user_response.text}")
+            return
+            
+        user_data = user_response.json()[0] if user_response.json() else {}
+        current_attributes = user_data.get("attributes", {})
+        
+        # Get existing recent_files list or create new empty list
+        recent_files = current_attributes.get("recent_files", [])
+        
+        # Create timestamp and new entry with timestamp|file_path format
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        new_entry = f"{timestamp}|{file_path}"
+        
+        # Remove any existing entry for this file path (check by file path part after |)
+        recent_files = [entry for entry in recent_files if not entry.endswith(f"|{file_path}")]
+        
+        # Append the new entry to the list
+        recent_files.append(new_entry)
+        
+        max_entries = 2
+        if len(recent_files) > max_entries:
+            # Sort by timestamp (first part before |) in chronological order
+            recent_files.sort(key=lambda x: x.split('|')[0])
+            # Keep only the last 5 entries (most recent)
+            recent_files = recent_files[-max_entries:]
+        
+        # Update the attributes with the new recent_files list
+        updated_attributes = current_attributes.copy()
+        updated_attributes["recent_files"] = recent_files
+        
+        # Prepare payload with all existing user data plus updated attributes
+        payload = {
+            "username": user_data.get("username", username),  # Use retrieved username or fallback to parameter
+            "firstName": user_data.get("firstName", ""),
+            "lastName": user_data.get("lastName", ""),
+            "email": user_data.get("email", ""),
+            "emailVerified": user_data.get("emailVerified", True),
+            "enabled": user_data.get("enabled", True),
+            "attributes": updated_attributes
+        }
+        print("/download_file endpoint: Updating user attributes in Keycloak:", payload)
+        # Update user attributes in Keycloak
+        response = await update_user_details(payload, user_id)
+        
+        if response.status_code not in [200, 201, 204]:
+            print(f"Error updating user attributes in Keycloak: {response.status_code} - {response.text}")
+            
+    except Exception as e:
+        # Log the error but don't fail the download
+        print(f"Error updating user attributes in Keycloak for user {user_id}: {str(e)}")
