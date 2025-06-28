@@ -389,35 +389,40 @@ async def toggle_user_status(username: str, action: str, access_token=None):
             raise HTTPException(status_code=500, detail=str(e))
 
 
-async def get_login_events(username: str, access_token=None):
+async def get_login_events(username: str = None, access_token=None):
     """
-    Retrieve LOGIN events for a specific user by username.
+    Retrieve LOGIN events for a specific user by username or for all users.
     
     Args:
-        username (str): Username to filter events for
+        username (str, optional): Username to filter events for. If None, returns events for all users.
         access_token (str, optional): Access token for authentication
         
     Returns:
-        dict: Dictionary containing user_id and filtered login events
+        list: List of dictionaries containing username and timestamp pairs
     """
     try:
-        # Get user details to extract user ID
-        user_response = await retrieve_user_details(username, access_token)
-        
-        if user_response.status_code != 200:
-            raise HTTPException(status_code=user_response.status_code, 
-                              detail=f"Failed to retrieve user details: {user_response.text}")
-        
-        user_data = user_response.json()
-        if not user_data:
-            raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+        if username:
+            # Get login events for specific user
+            # Get user details to extract user ID
+            user_response = await retrieve_user_details(username, access_token)
             
-        user_id = user_data[0].get("id")
-        if not user_id:
-            raise HTTPException(status_code=500, detail="User ID not found in user data")
-        
-        # Get LOGIN events for the user
-        events_response = await get_events(user_id=user_id, event_type="LOGIN", access_token=access_token)
+            if user_response.status_code != 200:
+                raise HTTPException(status_code=user_response.status_code, 
+                                  detail=f"Failed to retrieve user details: {user_response.text}")
+            
+            user_data = user_response.json()
+            if not user_data:
+                raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+                
+            user_id = user_data[0].get("id")
+            if not user_id:
+                raise HTTPException(status_code=500, detail="User ID not found in user data")
+            
+            # Get LOGIN events for the user
+            events_response = await get_events(user_id=user_id, event_type="LOGIN", access_token=access_token)
+        else:
+            # Get login events for all users
+            events_response = await get_events(event_type="LOGIN", access_token=access_token)
         
         if events_response.status_code != 200:
             raise HTTPException(status_code=events_response.status_code, 
@@ -425,27 +430,69 @@ async def get_login_events(username: str, access_token=None):
         
         events_data = events_response.json()
         
-        # Extract only timestamps from the events and sort them chronologically
-        timestamps = [event.get("time") for event in events_data if event.get("time")]
-        timestamps.sort()  # Sort in chronological order (oldest to newest)
-        
-        max_entries = 3
-        timestamps = timestamps[-max_entries:] if len(timestamps) > max_entries else timestamps
-        
-        # Convert timestamps to ISO format for better readability and easy parsing
-        from datetime import datetime
-        formatted_timestamps = []
-        for timestamp in timestamps:
-            # Convert milliseconds to seconds and format as ISO string without decimal seconds
-            dt = datetime.fromtimestamp(timestamp / 1000)
-            iso_format = dt.strftime('%Y-%m-%dT%H:%M:%S')
-            formatted_timestamps.append(iso_format)
-        
-        return {
-            "user_id": user_id,
-            "username": username,
-            "login_events": formatted_timestamps
-        }
+        if username:
+            # For specific user - existing logic
+            timestamps = [event.get("time") for event in events_data if event.get("time")]
+            timestamps.sort()  # Sort in chronological order (oldest to newest)
+            
+            max_entries = 3
+            timestamps = timestamps[-max_entries:] if len(timestamps) > max_entries else timestamps
+            
+            # Convert timestamps to ISO format for better readability and easy parsing
+            from datetime import datetime
+            formatted_timestamps = []
+            for timestamp in timestamps:
+                # Convert milliseconds to seconds and format as ISO string without decimal seconds
+                dt = datetime.fromtimestamp(timestamp / 1000)
+                iso_format = dt.strftime('%Y-%m-%dT%H:%M:%S')
+                formatted_timestamps.append(iso_format)
+            
+            # Format response as list of dictionaries with username and timestamp pairs
+            response_list = []
+            for timestamp in formatted_timestamps:
+                response_list.append({username: timestamp})
+            
+            return response_list
+        else:
+            # For all users - collect all events and apply total max_entries limit
+            from datetime import datetime
+            
+            # Get all users to map user IDs to usernames
+            all_users_response = await get_all_users(access_token)
+            if all_users_response.status_code != 200:
+                raise HTTPException(status_code=all_users_response.status_code, 
+                                  detail=f"Failed to retrieve users: {all_users_response.text}")
+            
+            all_users = all_users_response.json()
+            user_id_to_username = {user.get("id"): user.get("username") for user in all_users if user.get("id") and user.get("username")}
+            
+            # Collect all events with usernames and timestamps
+            all_events = []
+            for event in events_data:
+                if event.get("time") and event.get("userId"):
+                    user_id = event.get("userId")
+                    username = user_id_to_username.get(user_id)
+                    if username:  # Only include if username is found
+                        all_events.append({
+                            "username": username,
+                            "timestamp": event.get("time")
+                        })
+            
+            # Sort all events chronologically (oldest to newest)
+            all_events.sort(key=lambda x: x["timestamp"])
+            
+            # Apply total max_entries limit and keep the most recent ones
+            max_entries = 3
+            all_events = all_events[-max_entries:] if len(all_events) > max_entries else all_events
+            
+            # Convert to required format and convert timestamps to ISO format
+            response_list = []
+            for event in all_events:
+                dt = datetime.fromtimestamp(event["timestamp"] / 1000)
+                iso_format = dt.strftime('%Y-%m-%dT%H:%M:%S')
+                response_list.append({event["username"]: iso_format})
+            
+            return response_list
     
     except Exception as e:
         if isinstance(e, HTTPException):
