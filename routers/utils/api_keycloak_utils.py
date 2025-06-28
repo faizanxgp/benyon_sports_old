@@ -323,3 +323,60 @@ async def users_status(access_token=None):
         details[usernames[i]] = [full_names[i], emails[i], role_name, status]
     
     return details
+
+async def toggle_user_status(username: str, action: str, access_token=None):
+    """
+    Enable or disable a user in Keycloak.
+    
+    Args:
+        username (str): The username of the user to enable/disable
+        action (str): "enable" to enable the user, "disable" to disable the user
+        access_token: Optional access token for authentication
+    
+    Returns:
+        dict: Response indicating success or failure
+    """
+    try:
+        # Get user details to find the user ID
+        user_response = await retrieve_user_details(username)
+        
+        if user_response.status_code != 200:
+            raise HTTPException(status_code=user_response.status_code, 
+                              detail=f"Failed to retrieve user details: {user_response.text}")
+        
+        user_data = user_response.json()
+        if not user_data:
+            raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+        
+        user_id = user_data[0].get("id")
+        if not user_id:
+            raise HTTPException(status_code=404, detail=f"User ID not found for username '{username}'")
+        
+        # Determine the enabled status based on action
+        if action.lower() == "enable":
+            enabled = True
+        elif action.lower() == "disable":
+            enabled = False
+        else:
+            raise HTTPException(status_code=400, detail="Action must be either 'enable' or 'disable'")
+        
+        # Prepare payload to update user status
+        payload = {
+            "enabled": enabled
+        }
+        
+        # Update user status
+        response = await update_user_details(payload, user_id, access_token)
+        
+        if response.status_code in [200, 201, 204]:
+            status_text = "enabled" if enabled else "disabled"
+            return {"detail": f"User '{username}' has been {status_text} successfully"}
+        else:
+            raise HTTPException(status_code=response.status_code, 
+                              detail=f"Failed to update user status: {response.text}")
+    
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
