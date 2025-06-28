@@ -397,3 +397,43 @@ async def api_replace_user_role(request: Request):
         if isinstance(e, HTTPException):
             raise e
         else:            raise HTTPException(status_code=500, detail=str(e))
+
+
+@keycloak_router.post("/toggle_user_status")
+@jwt_token("all_endpoints")
+async def api_toggle_user_status(request: Request):
+    """
+    API endpoint to enable or disable a user in Keycloak.
+    
+    Expected JSON payload:
+    {
+        "username": "user@example.com",
+        "action": "disable"  # or "enable"
+    }
+    """
+    try:
+        payload = await request.json()
+        username = payload.get("username")
+        action = payload.get("action")
+        
+        if not username:
+            raise HTTPException(status_code=400, detail="Username is required")
+        
+        if not action:
+            raise HTTPException(status_code=400, detail="Action is required")
+        
+        if action.lower() not in ["enable", "disable"]:
+            raise HTTPException(status_code=400, detail="Action must be either 'enable' or 'disable'")
+        
+        response = await toggle_user_status(username, action)
+        
+        return response
+    
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"toggle_user_status. error: {tb_str}")
+        
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
