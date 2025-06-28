@@ -313,14 +313,21 @@ async def users_status(access_token=None):
     usernames = [user.get("username") for user in all_users]
     full_names = [user.get("firstName") + " " + user.get("lastName") for user in all_users]
     emails = [user.get("email") for user in all_users]
+    enabled_statuses = [user.get("enabled", True) for user in all_users]  # Default to True if not present
     
     details = {}
     for i, id in enumerate(user_ids):
         active_sessions = (await check_user_active(id)).json()
-        status = "active" if (len(active_sessions)>0) else "inactive"
+        session_status = "active" if (len(active_sessions)>0) else "inactive"
         user_roles = await get_user_roles(id)
         role_name = user_roles[0] if user_roles else ""
-        details[usernames[i]] = [full_names[i], emails[i], role_name, status]
+        details[usernames[i]] = {
+            "full_name": full_names[i],
+            "email": emails[i], 
+            "role": role_name, 
+            "session_status": session_status,
+            "enabled": enabled_statuses[i]
+        }
     
     return details
 
