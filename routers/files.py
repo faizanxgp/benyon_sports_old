@@ -9,7 +9,7 @@ import fitz
 from PIL import Image
 import shutil
 from pathlib import Path
-import datetime
+from datetime import datetime
 import csv
 
 from decorators.jwt import jwt_token
@@ -17,39 +17,6 @@ from routers.utils.api_files_utils import *
 from routers.utils.misc_keycloak_utils import *
 
 files_router = APIRouter()
-
-
-async def log_file_download(username: str, file_path: str):
-    """
-    Log file download activity to a CSV file for the specific user.
-    Creates necessary directories if they don't exist.
-    """
-    try:
-        # Create logs directory structure if it doesn't exist
-        logs_dir = Path("logs")
-        recent_files_dir = logs_dir / "recent_files"
-        recent_files_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Create CSV file path for the user
-        csv_file_path = recent_files_dir / f"{username}.csv"
-        
-        # Prepare log entry
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_entry = [timestamp, file_path]
-        
-        # Write to CSV file (append mode)
-        with open(csv_file_path, 'a', newline='', encoding='utf-8') as csvfile:
-            writer = csv.writer(csvfile)
-            
-            # Add header if file is new/empty
-            if csv_file_path.stat().st_size == 0:
-                writer.writerow(["timestamp", "file_path"])
-            
-            writer.writerow(log_entry)
-            
-    except Exception as e:
-        # Log the error but don't fail the download
-        print(f"Error logging download for user {username}: {str(e)}")
 
 
 @files_router.post("/search_files")
@@ -71,13 +38,10 @@ async def api_download_file(request: Request):
     try:
         data = await request.form()
         path = data.get("path")
-        username = request.state.username
+        username = request.state.email
+        user_id = request.state.user_id
         
-        # Get the file response
-        file_response = await download_file(path)
-        
-        # Log the download just before sending the response
-        await log_file_download(username, path)
+        file_response = await download_file(path, user_id, username)
         
         return file_response
     except Exception as e:
@@ -197,8 +161,6 @@ async def api_upload_multiple_folders(request: Request):
         
         if not files:
             raise HTTPException(status_code=400, detail="No files uploaded")
-        
-        
         
         result = await upload_multiple_folders(files, directory_structure)
         return JSONResponse(content={"detail": result})
