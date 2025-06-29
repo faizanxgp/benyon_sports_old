@@ -42,7 +42,7 @@ async def api_delete_permission(request: Request):
 async def api_unassign_permission(request: Request):
     try:
         payload = await request.json()
-        resources, username = payload.get("resources"), payload.get("username")
+        resources, username = payload.get("resource_names"), payload.get("username")
         response = await unassign_permission(resources, username)
         
         return response
