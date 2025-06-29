@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Preview with Text Selection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .pdf-viewer {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .pdf-header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .pdf-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .pdf-controls button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .pdf-controls button:hover {
+            background: #2980b9;
+        }
+        
+        .pdf-controls button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .pdf-toolbar {
+            background: #ecf0f1;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-info {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .zoom-controls button {
+            background: #34495e;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .pdf-content {
+            padding: 20px;
+            text-align: center;
+            min-height: 600px;
+            position: relative;
+        }
+        
+        .pdf-page-container {
+            margin: 0 auto 20px;
+            display: inline-block;
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .pdf-page-background {
+            position: relative;
+            display: block;
+        }
+        
+        .pdf-text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+        
+        .text-span {
+            position: absolute;
+            color: transparent;
+            white-space: pre;
+            cursor: text;
+            font-family: monospace;
+            transform-origin: 0% 0%;
+            overflow: hidden;
+        }
+        
+        .text-span:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        
+        .text-span::selection {
+            background-color: rgba(0, 123, 255, 0.3);
+            color: transparent;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid #ddd;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+        }
+        
+        .mode-selector {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .mode-selector label {
+            margin-right: 15px;
+            font-size: 14px;
+        }
+        
+        .mode-selector input[type="radio"] {
+            margin-right: 5px;
+        }
+        
+        .selection-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            max-width: 300px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-viewer">
+        <div class="pdf-header">
+            <div class="pdf-title" id="pdfTitle">PDF Preview with Text Selection</div>
+            <div class="pdf-controls">
+                <button onclick="showLoadDialog()">Load PDF</button>
+            </div>
+        </div>
+        
+        <div class="mode-selector">
+            <label>
+                <input type="radio" name="viewMode" value="image" checked onchange="changeViewMode(this.value)">
+                Image Mode (Fast)
+            </label>
+            <label>
+                <input type="radio" name="viewMode" value="text" onchange="changeViewMode(this.value)">
+                Text Selection Mode
+            </label>
+            <label>
+                <input type="radio" name="viewMode" value="pdfjs" onchange="changeViewMode(this.value)">
+                PDF.js Mode (Best)
+            </label>
+        </div>
+        
+        <div class="pdf-toolbar">
+            <div class="page-info">
+                Page <span id="currentPage">1</span> of <span id="totalPages">0</span>
+            </div>
+            <div class="zoom-controls">
+                <button onclick="zoomOut()">-</button>
+                <span id="zoomLevel">100%</span>
+                <button onclick="zoomIn()">+</button>
+            </div>
+        </div>
+        
+        <div class="pdf-content" id="pdfContent">
+            <div class="loading">Click "Load PDF" to start...</div>
+        </div>
+        
+        <div class="pdf-toolbar">
+            <div>
+                <button id="prevBtn" onclick="prevPage()" disabled>Previous</button>
+                <button id="nextBtn" onclick="nextPage()" disabled>Next</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="selection-info" id="selectionInfo"></div>
+
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <script>
+        // PDF viewer state
+        let pdfState = {
+            currentPath: '',
+            currentPage: 1,
+            totalPages: 0,
+            zoomLevel: 1.0,
+            quality: 'medium',
+            loadedPages: new Map(),
+            pdfInfo: null,
+            viewMode: 'image' // 'image', 'text', 'pdfjs'
+        };
+
+        // API base URL
+        const API_BASE = 'http://127.0.0.1:5000';
+
+        // Initialize PDF.js
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        function showLoadDialog() {
+            const path = prompt('Enter PDF file path (e.g., "docs/sample.pdf"):');
+            if (path) {
+                loadPdf(path);
+            }
+        }
+
+        function changeViewMode(mode) {
+            pdfState.viewMode = mode;
+            if (pdfState.currentPath) {
+                loadPage(pdfState.currentPage);
+            }
+        }
+
+        // Load PDF info and first page
+        async function loadPdf(path) {
+            try {
+                pdfState.currentPath = path;
+                document.getElementById('pdfTitle').textContent = `Loading: ${path}`;
+                document.getElementById('pdfContent').innerHTML = '<div class="loading">Loading PDF info...</div>';
+
+                // Get PDF information
+                const pdfInfo = await getPdfInfo(path);
+                pdfState.pdfInfo = pdfInfo;
+                pdfState.totalPages = pdfInfo.page_count;
+                
+                document.getElementById('pdfTitle').textContent = pdfInfo.title || path;
+                document.getElementById('totalPages').textContent = pdfInfo.page_count;
+                
+                // Load first page
+                await loadPage(1);
+                updateNavigation();
+                
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                document.getElementById('pdfContent').innerHTML = 
+                    `<div class="error">Error loading PDF: ${error.message}</div>`;
+            }
+        }
+
+        // Load a page based on current view mode
+        async function loadPage(pageNum) {
+            try {
+                pdfState.currentPage = pageNum;
+                document.getElementById('currentPage').textContent = pageNum;
+                
+                if (pdfState.viewMode === 'image') {
+                    await loadImagePage(pageNum);
+                } else if (pdfState.viewMode === 'text') {
+                    await loadTextSelectablePage(pageNum);
+                } else if (pdfState.viewMode === 'pdfjs') {
+                    await loadPdfJsPage(pageNum);
+                }
+                
+            } catch (error) {
+                console.error('Error loading page:', error);
+                document.getElementById('pdfContent').innerHTML = 
+                    `<div class="error">Error loading page: ${error.message}</div>`;
+            }
+        }
+
+        // Load page as image (fast, no text selection)
+        async function loadImagePage(pageNum) {
+            document.getElementById('pdfContent').innerHTML = 
+                `<div class="loading">Loading page ${pageNum}...</div>`;
+
+            const pageData = await getPdfPage(pdfState.currentPath, pageNum, pdfState.quality, pdfState.zoomLevel);
+            
+            const pageContainer = document.createElement('div');
+            pageContainer.className = 'pdf-page-container';
+            
+            const img = document.createElement('img');
+            img.src = `data:image/png;base64,${pageData.image_data}`;
+            img.alt = `Page ${pageNum}`;
+            img.className = 'pdf-page-background';
+            
+            pageContainer.appendChild(img);
+            
+            document.getElementById('pdfContent').innerHTML = '';
+            document.getElementById('pdfContent').appendChild(pageContainer);
+        }
+
+        // Load page with text selection overlay
+        async function loadTextSelectablePage(pageNum) {
+            document.getElementById('pdfContent').innerHTML = 
+                `<div class="loading">Loading page ${pageNum} with text...</div>`;
+
+            const pageData = await getPdfPageWithText(pdfState.currentPath, pageNum, pdfState.quality, pdfState.zoomLevel);
+            
+            const pageContainer = document.createElement('div');
+            pageContainer.className = 'pdf-page-container';
+            
+            // Background image
+            const img = document.createElement('img');
+            img.src = `data:image/png;base64,${pageData.image_data}`;
+            img.alt = `Page ${pageNum}`;
+            img.className = 'pdf-page-background';
+            
+            // Text layer
+            const textLayer = document.createElement('div');
+            textLayer.className = 'pdf-text-layer';
+            
+            // Add text spans for each word
+            pageData.text_layer.forEach(textBlock => {
+                if (textBlock.type === 'word' && textBlock.text.trim()) {
+                    const span = document.createElement('span');
+                    span.className = 'text-span';
+                    span.textContent = textBlock.text;
+                    
+                    // Position the span
+                    span.style.left = textBlock.bbox.x + 'px';
+                    span.style.top = textBlock.bbox.y + 'px';
+                    span.style.width = textBlock.bbox.width + 'px';
+                    span.style.height = textBlock.bbox.height + 'px';
+                    span.style.fontSize = textBlock.bbox.height + 'px';
+                    
+                    textLayer.appendChild(span);
+                }
+            });
+            
+            pageContainer.appendChild(img);
+            pageContainer.appendChild(textLayer);
+            
+            document.getElementById('pdfContent').innerHTML = '';
+            document.getElementById('pdfContent').appendChild(pageContainer);
+            
+            // Add text selection listener
+            textLayer.addEventListener('mouseup', handleTextSelection);
+        }
+
+        // Load page using PDF.js (best quality and features)
+        async function loadPdfJsPage(pageNum) {
+            if (typeof pdfjsLib === 'undefined') {
+                throw new Error('PDF.js not loaded. Please check your internet connection.');
+            }
+
+            document.getElementById('pdfContent').innerHTML = 
+                `<div class="loading">Loading page ${pageNum} with PDF.js...</div>`;
+
+            try {
+                // Load PDF using PDF.js
+                const pdfUrl = `${API_BASE}/files/pdf_raw?path=${encodeURIComponent(pdfState.currentPath)}`;
+                const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+                const page = await pdf.getPage(pageNum);
+                
+                const scale = pdfState.zoomLevel * 1.5;
+                const viewport = page.getViewport({ scale });
+                
+                // Create canvas
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // Create container
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'pdf-page-container';
+                pageContainer.style.position = 'relative';
+                
+                // Render PDF page
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                // Create text layer
+                const textLayerDiv = document.createElement('div');
+                textLayerDiv.className = 'pdf-text-layer';
+                textLayerDiv.style.width = viewport.width + 'px';
+                textLayerDiv.style.height = viewport.height + 'px';
+                
+                pageContainer.appendChild(canvas);
+                pageContainer.appendChild(textLayerDiv);
+                
+                document.getElementById('pdfContent').innerHTML = '';
+                document.getElementById('pdfContent').appendChild(pageContainer);
+                
+                // Render text layer
+                const textContent = await page.getTextContent();
+                
+                // Simple text layer rendering (you might want to use PDF.js TextLayerBuilder for better results)
+                textContent.items.forEach(item => {
+                    if (item.str.trim()) {
+                        const span = document.createElement('span');
+                        span.textContent = item.str;
+                        span.className = 'text-span';
+                        
+                        const transform = item.transform;
+                        const x = transform[4];
+                        const y = viewport.height - transform[5];
+                        const fontSize = transform[0];
+                        
+                        span.style.left = x + 'px';
+                        span.style.top = (y - fontSize) + 'px';
+                        span.style.fontSize = fontSize + 'px';
+                        span.style.transform = `scaleX(${transform[0] / fontSize})`;
+                        
+                        textLayerDiv.appendChild(span);
+                    }
+                });
+                
+                textLayerDiv.addEventListener('mouseup', handleTextSelection);
+                
+            } catch (error) {
+                throw new Error(`PDF.js error: ${error.message}`);
+            }
+        }
+
+        // Handle text selection
+        function handleTextSelection() {
+            const selection = window.getSelection();
+            if (selection.toString().trim()) {
+                const selectedText = selection.toString();
+                const selectionInfo = document.getElementById('selectionInfo');
+                selectionInfo.innerHTML = `Selected: "${selectedText.substring(0, 100)}${selectedText.length > 100 ? '...' : ''}"`;
+                selectionInfo.style.display = 'block';
+                
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    selectionInfo.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // API calls
+        async function getPdfInfo(path) {
+            const formData = new FormData();
+            formData.append('path', path);
+
+            const response = await fetch(`${API_BASE}/files/pdf_info`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.detail;
+        }
+
+        async function getPdfPage(path, pageNum, quality = 'medium', scale = 1.0) {
+            const formData = new FormData();
+            formData.append('path', path);
+            formData.append('page', pageNum.toString());
+            formData.append('quality', quality);
+            formData.append('scale', scale.toString());
+
+            const response = await fetch(`${API_BASE}/files/pdf_page`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.detail;
+        }
+
+        async function getPdfPageWithText(path, pageNum, quality = 'medium', scale = 1.0) {
+            const formData = new FormData();
+            formData.append('path', path);
+            formData.append('page', pageNum.toString());
+            formData.append('quality', quality);
+            formData.append('scale', scale.toString());
+
+            const response = await fetch(`${API_BASE}/files/pdf_page_with_text`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.detail;
+        }
+
+        // Navigation functions
+        function prevPage() {
+            if (pdfState.currentPage > 1) {
+                loadPage(pdfState.currentPage - 1);
+                updateNavigation();
+            }
+        }
+
+        function nextPage() {
+            if (pdfState.currentPage < pdfState.totalPages) {
+                loadPage(pdfState.currentPage + 1);
+                updateNavigation();
+            }
+        }
+
+        function updateNavigation() {
+            document.getElementById('prevBtn').disabled = pdfState.currentPage <= 1;
+            document.getElementById('nextBtn').disabled = pdfState.currentPage >= pdfState.totalPages;
+        }
+
+        // Zoom functions
+        function zoomIn() {
+            pdfState.zoomLevel = Math.min(3.0, pdfState.zoomLevel + 0.25);
+            updateZoomDisplay();
+            reloadCurrentPage();
+        }
+
+        function zoomOut() {
+            pdfState.zoomLevel = Math.max(0.5, pdfState.zoomLevel - 0.25);
+            updateZoomDisplay();
+            reloadCurrentPage();
+        }
+
+        function updateZoomDisplay() {
+            document.getElementById('zoomLevel').textContent = Math.round(pdfState.zoomLevel * 100) + '%';
+        }
+
+        function reloadCurrentPage() {
+            if (pdfState.currentPath) {
+                loadPage(pdfState.currentPage);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateZoomDisplay();
+            
+            // Handle text selection globally
+            document.addEventListener('selectionchange', function() {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0 && selection.toString().trim()) {
+                    console.log('Text selected:', selection.toString());
+                }
+            });
+        });
+    </script>
+</body>
+</html>

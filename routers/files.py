@@ -16,6 +16,27 @@ from decorators.jwt import jwt_token
 from routers.utils.api_files_utils import *
 from routers.utils.misc_keycloak_utils import *
 
+# Import the new PDF functions explicitly
+from routers.utils.api_files_utils import (
+    get_pdf_info, 
+    get_pdf_page, 
+    get_pdf_pages_range, 
+    search_pdf_text,
+    get_pdf_page_with_text,
+    get_pdf_text_layer,
+    get_raw_pdf
+)
+
+# Import the new DOCX, XLSX, PPTX functions explicitly
+from routers.utils.api_files_utils import (
+    get_docx_info,
+    get_docx_page,
+    get_xlsx_info,
+    get_xlsx_sheet,
+    get_pptx_info,
+    get_pptx_slide
+)
+
 files_router = APIRouter()
 
 
@@ -171,4 +192,222 @@ async def api_upload_multiple_folders(request: Request):
     except Exception as e:
         tb_str = traceback.format_exc()
         print(f"Error in upload_multiple endpoint: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/pdf_info")
+@jwt_token("")
+async def api_pdf_info(request: Request):
+    """Get PDF metadata like page count, dimensions, etc."""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        pdf_info = await get_pdf_info(path)
+        return JSONResponse(content={"detail": pdf_info})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting PDF info for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/pdf_page")
+@jwt_token("")
+async def api_pdf_page(request: Request):
+    """Get a specific page from PDF as base64 image"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        page_num = int(data.get("page", 1))
+        quality = data.get("quality", "medium")  # low, medium, high
+        scale = float(data.get("scale", 1.0))
+        
+        page_data = await get_pdf_page(path, page_num, quality, scale)
+        return JSONResponse(content={"detail": page_data})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting PDF page {page_num} for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/pdf_pages_range")
+@jwt_token("")
+async def api_pdf_pages_range(request: Request):
+    """Get multiple PDF pages in a range"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        start_page = int(data.get("start_page", 1))
+        end_page = int(data.get("end_page", start_page))
+        quality = data.get("quality", "medium")
+        scale = float(data.get("scale", 1.0))
+        
+        pages_data = await get_pdf_pages_range(path, start_page, end_page, quality, scale)
+        return JSONResponse(content={"detail": pages_data})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting PDF pages {start_page}-{end_page} for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/pdf_search")
+@jwt_token("")
+async def api_pdf_search(request: Request):
+    """Search for text within PDF and return page numbers and positions"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        search_text = data.get("search_text")
+        
+        search_results = await search_pdf_text(path, search_text)
+        return JSONResponse(content={"detail": search_results})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error searching PDF {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/pdf_page_with_text")
+@jwt_token("")
+async def api_pdf_page_with_text(request: Request):
+    """Get a PDF page with both image and text layer for text selection"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        page_num = int(data.get("page", 1))
+        quality = data.get("quality", "medium")
+        scale = float(data.get("scale", 1.0))
+        
+        page_data = await get_pdf_page_with_text(path, page_num, quality, scale)
+        return JSONResponse(content={"detail": page_data})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting PDF page with text {page_num} for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/pdf_text_layer")
+@jwt_token("")
+async def api_pdf_text_layer(request: Request):
+    """Get just the text layer data for a PDF page"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        page_num = int(data.get("page", 1))
+        scale = float(data.get("scale", 1.0))
+        
+        text_data = await get_pdf_text_layer(path, page_num, scale)
+        return JSONResponse(content={"detail": text_data})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting PDF text layer {page_num} for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.get("/pdf_raw")
+@jwt_token("")
+async def api_pdf_raw(request: Request):
+    """Serve raw PDF file for PDF.js viewer"""
+    try:
+        path = request.query_params.get("path")
+        if not path:
+            raise HTTPException(status_code=400, detail="Path parameter is required")
+            
+        raw_pdf = await get_raw_pdf(path)
+        return raw_pdf
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error serving raw PDF {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/docx_info")
+@jwt_token("")
+async def api_docx_info(request: Request):
+    """Get Word document metadata and page count (approximate)"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        info = await get_docx_info(path)
+        return JSONResponse(content={"detail": info})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting DOCX info for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/docx_page")
+@jwt_token("")
+async def api_docx_page(request: Request):
+    """Get a specific page (section) from a Word document as HTML"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        page_num = int(data.get("page", 1))
+        page_data = await get_docx_page(path, page_num)
+        return JSONResponse(content={"detail": page_data})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting DOCX page {page_num} for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/xlsx_info")
+@jwt_token("")
+async def api_xlsx_info(request: Request):
+    """Get Excel file metadata and sheet names"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        info = await get_xlsx_info(path)
+        return JSONResponse(content={"detail": info})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting XLSX info for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/xlsx_sheet")
+@jwt_token("")
+async def api_xlsx_sheet(request: Request):
+    """Get a specific sheet from Excel as HTML table"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        sheet_name = data.get("sheet_name")
+        sheet_data = await get_xlsx_sheet(path, sheet_name)
+        return JSONResponse(content={"detail": sheet_data})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting XLSX sheet {sheet_name} for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/pptx_info")
+@jwt_token("")
+async def api_pptx_info(request: Request):
+    """Get PowerPoint file metadata and slide count"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        info = await get_pptx_info(path)
+        return JSONResponse(content={"detail": info})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting PPTX info for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/pptx_slide")
+@jwt_token("")
+async def api_pptx_slide(request: Request):
+    """Get a specific slide from PowerPoint as HTML or image"""
+    try:
+        data = await request.form()
+        path = data.get("path")
+        slide_num = int(data.get("slide", 1))
+        slide_data = await get_pptx_slide(path, slide_num)
+        return JSONResponse(content={"detail": slide_data})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting PPTX slide {slide_num} for {path}: {tb_str}")
         raise HTTPException(status_code=500, detail=str(e))
