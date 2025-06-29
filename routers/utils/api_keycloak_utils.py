@@ -30,15 +30,21 @@ async def delete_permission(username: str, access_token=None):
     except Exception as e:
         raise e from e
 
-async def unassign_permission(resource_names: str, username: str, access_token=None):
+async def unassign_permission(resources: list, username: str, access_token=None):
     try:
         rem_resource_ids = []
         rem_resource_dict = {} # to store resource name against each resource id
-        for name in resource_names:
-            resource_id = await retrieve_resource(name)
-            if not resource_id: raise Exception(f"resource_id not found against the resource: {name}")
+        for resource_info in resources:
+            resource_name = resource_info.get("name")
+            resource_type = resource_info.get("type")
+            
+            if not resource_name or not resource_type:
+                raise Exception(f"Resource must have both 'name' and 'type' fields. Found: {resource_info}")
+            
+            resource_id = await retrieve_resource(resource_name)
+            if not resource_id: raise Exception(f"resource_id not found for resource '{resource_name}'")
             rem_resource_ids.append(resource_id)
-            rem_resource_dict[resource_id] = name
+            rem_resource_dict[resource_id] = resource_name
         print("rem_resource_ids:", rem_resource_ids)
 
         policy_id = (await retrieve_user_policy(username)).get("id")
@@ -95,12 +101,44 @@ async def unassign_permission(resource_names: str, username: str, access_token=N
         raise e from e
     
 
-async def assign_permission(resource_names: str, username: str, access_token=None):
+async def assign_permission(resources: list, username: str, access_token=None):
     try:
         new_resource_ids = []
-        for resource in resource_names:
-            resource_id = await retrieve_resource(resource)
-            if not resource_id: raise Exception(f"resource_id not found against the resource: {resource}")
+        for resource_info in resources:
+            resource_name = resource_info.get("name")
+            resource_type = resource_info.get("type")
+            
+            if not resource_name or not resource_type:
+                raise Exception(f"Resource must have both 'name' and 'type' fields. Found: {resource_info}")
+            
+            resource_id = await retrieve_resource(resource_name)
+            if not resource_id:
+                # Resource doesn't exist, create it automatically
+                print(f"Resource '{resource_name}' with type '{resource_type}' not found, creating new resource...")
+                
+                # Create resource with the specified type from input
+                resource_payload = {
+                    "name": resource_name,
+                    "displayName": resource_name,
+                    "type": resource_type,  # Use the type from input payload
+                    "icon_uri": "",
+                    "ownerManagedAccess": False,
+                    "attributes": {},
+                    "scopes": []
+                }
+                
+                # Create the resource
+                create_response = await create_resource(resource_payload, access_token)
+                if create_response.status_code not in [200, 201, 204]:
+                    raise Exception(f"Failed to create resource '{resource_name}': {create_response.text}")
+                
+                print(f"Successfully created resource '{resource_name}' with type '{resource_type}'")
+                
+                # Retrieve the newly created resource to get its ID
+                resource_id = await retrieve_resource(resource_name)
+                if not resource_id:
+                    raise Exception(f"Failed to retrieve newly created resource '{resource_name}'")
+            
             new_resource_ids.append(resource_id)
 
         # Try to retrieve user policy, create if it doesn't exist

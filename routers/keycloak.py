@@ -42,8 +42,8 @@ async def api_delete_permission(request: Request):
 async def api_unassign_permission(request: Request):
     try:
         payload = await request.json()
-        resource_names, username = payload.get("resource_names"), payload.get("username")
-        response = await unassign_permission(resource_names, username)
+        resources, username = payload.get("resources"), payload.get("username")
+        response = await unassign_permission(resources, username)
         
         return response
     
@@ -62,8 +62,8 @@ async def api_unassign_permission(request: Request):
 async def api_assign_permission(request: Request):
     try:
         payload = await request.json()
-        resource_names, username = payload.get("resource_names"), payload.get("username")
-        response = await assign_permission(resource_names, username)
+        resources, username = payload.get("resources"), payload.get("username")
+        response = await assign_permission(resources, username)
         
         if response.status_code in [200, 201, 204]:
             return {"detail": "permission assigned successfully"}
