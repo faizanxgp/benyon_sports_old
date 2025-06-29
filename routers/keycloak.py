@@ -509,3 +509,40 @@ async def api_get_user_permissions(request: Request):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+@keycloak_router.post("/create_resource")
+@jwt_token("all_endpoints")
+async def api_create_resource(request: Request):
+    """
+    API endpoint to create a new resource in Keycloak.
+    
+    Expected JSON payload:
+    {
+        "name": "resource_name",           # Required - unique resource name
+        "type": "resource_type"            # Required - type of resource (e.g., "file", "dir", "api")
+    }
+    
+    Note: 
+    - displayName will be automatically set to the same value as name
+    - Other fields (icon_uri, ownerManagedAccess, attributes, scopes) will use default values
+    
+    Returns success message if resource is created successfully.
+    """
+    try:
+        payload = await request.json()
+        response = await create_resource_api(payload)
+        
+        if response.status_code in [200, 201, 204]:
+            return {"detail": "resource created successfully"}
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"create_resource. error: {tb_str}")
+        
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))

@@ -555,3 +555,55 @@ async def get_user_permissions(username: str, access_token=None):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+async def create_resource_api(payload: dict, access_token=None):
+    """
+    Create a new resource in Keycloak
+    
+    Args:
+        payload: Dictionary containing resource details
+        access_token: Optional access token for authentication
+    
+    Expected payload structure:
+    {
+        "name": "resource_name",  # Required - unique resource name
+        "type": "resource_type"   # Required - e.g., "file", "dir", "api", etc.
+    }
+    
+    Returns:
+        HTTPResponse from Keycloak
+    """
+    try:
+        # Validate required fields
+        required_fields = ["name", "type"]
+        for field in required_fields:
+            if field not in payload:
+                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+        
+        # Set resource payload with required fields and default values
+        resource_payload = {
+            "name": payload["name"],
+            "displayName": payload["name"],  # Set displayName same as name
+            "type": payload["type"],
+            "icon_uri": "",
+            "ownerManagedAccess": False,
+            "attributes": {},
+            "scopes": []
+        }
+        
+        # Check if resource already exists
+        existing_resource = await retrieve_resource(payload["name"])
+        if existing_resource:
+            raise HTTPException(status_code=409, detail=f"Resource with name '{payload['name']}' already exists")
+        
+        # Create the resource
+        response = await create_resource(resource_payload, access_token)
+        
+        return response
+        
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
