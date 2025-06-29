@@ -140,18 +140,30 @@ async def create_user_policy(payload, access_token=None):
 
 
 async def retrieve_user_policy(username, access_token=None):
-    headers, _ = await obtain_headers(access_token)
-    async with httpx.AsyncClient() as client:
-        response = await client.get(base_url + ep_retrieve_policy, headers=headers)
+    try:
+        headers, _ = await obtain_headers(access_token)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(base_url + ep_retrieve_policy, headers=headers)
 
-    policy = None
-    details = response.json()
-    print("policy details:", details)
-    for detail in details:
-        if detail["name"] == f"policy_user_{username}":
-            policy = detail
-            break
-    return policy
+        if response.status_code != 200:
+            return None
+            
+        details = response.json()
+        print("policy details:", details)
+        
+        # Handle case where details is None or not a list
+        if not details or not isinstance(details, list):
+            return None
+            
+        policy = None
+        for detail in details:
+            if detail and detail.get("name") == f"policy_user_{username}":
+                policy = detail
+                break
+        return policy
+    except Exception as e:
+        print(f"Error in retrieve_user_policy for {username}: {e}")
+        return None
 
 
 async def delete_user_policy(policy_id, access_token=None):
@@ -171,16 +183,24 @@ async def create_resource(payload, access_token=None):
 
 
 async def retrieve_resource(resource_name, access_token=None):
-    headers, _ = await obtain_headers(access_token)
-    query_params = {
-    "name": resource_name,
-    "exact": True
-    }
-    async with httpx.AsyncClient() as client:
-        response = await client.get(base_url + ep_retrieve_resource, params=query_params, headers=headers)
+    try:
+        headers, _ = await obtain_headers(access_token)
+        query_params = {
+        "name": resource_name,
+        "exact": True
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.get(base_url + ep_retrieve_resource, params=query_params, headers=headers)
 
-    resource_id = response.json()
-    return resource_id[0] if resource_id else None
+        if response.status_code != 200:
+            return None
+            
+        resource_data = response.json()
+        # Return the full resource object if found, None if not found
+        return resource_data[0] if resource_data and len(resource_data) > 0 else None
+    except Exception as e:
+        print(f"Error in retrieve_resource for {resource_name}: {e}")
+        return None
 
 
 async def get_all_resources(access_token=None):

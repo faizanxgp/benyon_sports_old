@@ -32,37 +32,71 @@ async def delete_permission(username: str, access_token=None):
 
 async def unassign_permission(resources: list, username: str, access_token=None):
     try:
+        print(f"Starting unassign_permission for user: {username}")
+        print(f"Resources to unassign: {resources}")
+        
         rem_resource_ids = []
         rem_resource_dict = {} # to store resource name against each resource id
-        for resource_info in resources:
-            resource_name = resource_info.get("name")
-            resource_type = resource_info.get("type")
-            
-            if not resource_name or not resource_type:
-                raise Exception(f"Resource must have both 'name' and 'type' fields. Found: {resource_info}")
-            
+        not_found_resources = [] # to track resources that don't exist
+        
+        for resource_name in resources:
             resource_id = await retrieve_resource(resource_name)
-            if not resource_id: raise Exception(f"resource_id not found for resource '{resource_name}'")
-            rem_resource_ids.append(resource_id)
-            rem_resource_dict[resource_id] = resource_name
+            print(f"Retrieved resource for {resource_name}: {resource_id}")
+            
+            if not resource_id:
+                not_found_resources.append(resource_name)
+                print(f"Resource {resource_name} not found, added to not_found_resources")
+            else:
+                # Extract the resource ID from the resource object
+                actual_resource_id = resource_id.get("_id") if isinstance(resource_id, dict) else resource_id
+                rem_resource_ids.append(actual_resource_id)
+                rem_resource_dict[actual_resource_id] = resource_name
+                print(f"Resource {resource_name} found with ID: {actual_resource_id}")
+                
         print("rem_resource_ids:", rem_resource_ids)
+        print("not_found_resources:", not_found_resources)
 
-        policy_id = (await retrieve_user_policy(username)).get("id")
-        if not policy_id: raise Exception("policy_id not found against the given username")
+        # If no valid resource IDs found, handle gracefully
+        if not rem_resource_ids:
+            if not_found_resources:
+                return {"detail": f"No permissions unassigned. Resources not found: {not_found_resources}"}
+            else:
+                return {"detail": "No valid resources provided for unassignment"}
+
+        user_policy = await retrieve_user_policy(username)
+        if not user_policy:
+            raise Exception("policy not found for the given username")
+        policy_id = user_policy.get("id")
+        if not policy_id: 
+            raise Exception("policy_id not found against the given username")
         
         permission_name = f"permission_user_{username}"
-        all_permissions = (await get_all_permissions()).json()
+        permissions_response = await get_all_permissions()
+        if permissions_response.status_code != 200:
+            raise Exception(f"Failed to get permissions: {permissions_response.text}")
+        
+        all_permissions = permissions_response.json()
+        if not all_permissions or not isinstance(all_permissions, list):
+            all_permissions = []
+            
         relevant_permission = None
         for permission in all_permissions:
-            if permission.get("name") == permission_name:
+            if permission and permission.get("name") == permission_name:
                 relevant_permission = permission
                 break
  
         if relevant_permission:
             permission_id = relevant_permission.get("id")
-            resource_ids = []
-            resources_in_permission = (await get_resources_in_permission(permission_id)).json()
-            resource_ids = [resource.get("_id") for resource in resources_in_permission]
+            
+            resources_response = await get_resources_in_permission(permission_id)
+            if resources_response.status_code != 200:
+                raise Exception(f"Failed to get resources in permission: {resources_response.text}")
+                
+            resources_in_permission = resources_response.json()
+            if not resources_in_permission or not isinstance(resources_in_permission, list):
+                resources_in_permission = []
+                
+            resource_ids = [resource.get("_id") for resource in resources_in_permission if resource]
             print("resource_ids:", resource_ids)
             
             # check if all resources to be unassigned were earlier assigned or not?
@@ -90,10 +124,14 @@ async def unassign_permission(resources: list, username: str, access_token=None)
             response = await update_permission(permission_id, update_payload)
             if response.status_code in [200, 201, 204]:
                 return_string = "permissions unassigned"
-                if len(non_existent_permissions): return_string += f" (if existing). Following permissions did not exist: {non_existent_permissions}"
+                if len(non_existent_permissions): return_string += f" (if existing). Following resources were not found assigned: {non_existent_permissions}"
+                if len(not_found_resources): return_string += f". Following resources do not exist: {not_found_resources}"
                 return {"detail": return_string}
         else:
-            return {"detail": "no existing permission found for this user"}
+            if not_found_resources:
+                return {"detail": f"No existing permission found for this user. Resources not found: {not_found_resources}"}
+            else:
+                return {"detail": "no existing permission found for this user"}
 
         return response
 
@@ -111,8 +149,8 @@ async def assign_permission(resources: list, username: str, access_token=None):
             if not resource_name or not resource_type:
                 raise Exception(f"Resource must have both 'name' and 'type' fields. Found: {resource_info}")
             
-            resource_id = await retrieve_resource(resource_name)
-            if not resource_id:
+            resource_object = await retrieve_resource(resource_name)
+            if not resource_object:
                 # Resource doesn't exist, create it automatically
                 print(f"Resource '{resource_name}' with type '{resource_type}' not found, creating new resource...")
                 
@@ -135,10 +173,12 @@ async def assign_permission(resources: list, username: str, access_token=None):
                 print(f"Successfully created resource '{resource_name}' with type '{resource_type}'")
                 
                 # Retrieve the newly created resource to get its ID
-                resource_id = await retrieve_resource(resource_name)
-                if not resource_id:
+                resource_object = await retrieve_resource(resource_name)
+                if not resource_object:
                     raise Exception(f"Failed to retrieve newly created resource '{resource_name}'")
             
+            # Extract the resource ID from the resource object
+            resource_id = resource_object.get("_id") if isinstance(resource_object, dict) else resource_object
             new_resource_ids.append(resource_id)
 
         # Try to retrieve user policy, create if it doesn't exist
