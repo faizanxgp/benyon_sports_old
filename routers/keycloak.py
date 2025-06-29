@@ -472,3 +472,40 @@ async def api_login_events(request: Request):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+@keycloak_router.post("/get_user_permissions")
+@jwt_token("all_endpoints")
+async def api_get_user_permissions(request: Request):
+    """
+    API endpoint to retrieve all permissions (resources) granted to a specific user.
+    
+    Expected JSON payload:
+    {
+        "username": "user@example.com"  # Required - username to get permissions for
+    }
+    
+    Returns all resources/permissions granted to the specified user including:
+    - resource_name: Name of the resource
+    - resource_id: Unique identifier of the resource
+    - resource_type: Type of the resource (e.g., "urn:benyon:resource")
+    """
+    try:
+        data = await request.json()
+        username = data.get("username")
+        
+        if not username:
+            raise HTTPException(status_code=400, detail="Username is required")
+        
+        response = await get_user_permissions(username)
+        
+        return response
+    
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"get_user_permissions. error: {tb_str}")
+        
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
