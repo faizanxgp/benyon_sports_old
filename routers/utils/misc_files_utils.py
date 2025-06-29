@@ -334,16 +334,16 @@ async def process_directory_structure(structure, base_dir, current_path, file_ma
                     
                     # Create resource in Keycloak
                     relative_file_location = str(Path(relative_file_path).as_posix())
-                    resource_payload = {
-                        "name": relative_file_location,
-                        "displayName": relative_file_location,
-                        "type": "file",
-                        "icon_uri": "",
-                        "ownerManagedAccess": False,
-                        "attributes": {},
-                        "scopes": []
-                    }
-                    await create_resource(resource_payload)
+                    # resource_payload = {
+                    #     "name": relative_file_location,
+                    #     "displayName": relative_file_location,
+                    #     "type": "file",
+                    #     "icon_uri": "",
+                    #     "ownerManagedAccess": False,
+                    #     "attributes": {},
+                    #     "scopes": []
+                    # }
+                    # await create_resource(resource_payload)
                     
                     uploaded_files.append(relative_file_location)
                 else:
@@ -361,16 +361,16 @@ async def process_directory_structure(structure, base_dir, current_path, file_ma
                 
                 # Create resource in Keycloak for directory
                 relative_dir_path = str(Path(new_path).as_posix())
-                resource_payload = {
-                    "name": relative_dir_path,
-                    "displayName": relative_dir_path,
-                    "type": "dir",
-                    "icon_uri": "",
-                    "ownerManagedAccess": False,
-                    "attributes": {},
-                    "scopes": []
-                }
-                await create_resource(resource_payload)
+                # resource_payload = {
+                #     "name": relative_dir_path,
+                #     "displayName": relative_dir_path,
+                #     "type": "dir",
+                #     "icon_uri": "",
+                #     "ownerManagedAccess": False,
+                #     "attributes": {},
+                #     "scopes": []
+                # }
+                # await create_resource(resource_payload)
                 
                 created_dirs.append(relative_dir_path)
                 

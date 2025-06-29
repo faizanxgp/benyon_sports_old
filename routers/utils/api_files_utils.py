@@ -102,18 +102,18 @@ async def create_dir(path: str):
         abs_path = os.path.normpath(os.path.join(base_dir, relative_path))
         os.makedirs(abs_path, exist_ok=False)
         
-        resource_payload = (                            
-            {
-                "name":relative_path,
-                "displayName":relative_path,
-                "type":"dir",
-                "icon_uri":"",
-                "ownerManagedAccess":False,
-                "attributes":{},
-                "scopes":[]
-            }
-        )
-        await create_resource(resource_payload)
+        # resource_payload = (                            
+        #     {
+        #         "name":relative_path,
+        #         "displayName":relative_path,
+        #         "type":"dir",
+        #         "icon_uri":"",
+        #         "ownerManagedAccess":False,
+        #         "attributes":{},
+        #         "scopes":[]
+        #     }
+        # )
+        # await create_resource(resource_payload)
     
         return relative_path
     except Exception as e:
@@ -156,18 +156,18 @@ async def upload_files(folder: str, files, path: str):
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             relative_file_location = str(Path(os.path.join(relative_path, file.filename)).as_posix()) # e.g. docs/test_file.jpg
-            resource_payload = (
-                {
-                    "name":relative_file_location,
-                    "displayName":relative_file_location,
-                    "type":"file",
-                    "icon_uri":"",
-                    "ownerManagedAccess":False,
-                    "attributes":{},
-                    "scopes":[]
-                }
-            )
-            await create_resource(resource_payload)
+            # resource_payload = (
+            #     {
+            #         "name":relative_file_location,
+            #         "displayName":relative_file_location,
+            #         "type":"file",
+            #         "icon_uri":"",
+            #         "ownerManagedAccess":False,
+            #         "attributes":{},
+            #         "scopes":[]
+            #     }
+            # )
+            # await create_resource(resource_payload)
 
             uploaded_files.append(file.filename)
 
