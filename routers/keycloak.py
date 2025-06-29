@@ -105,7 +105,7 @@ async def api_create_user(request: Request):
 
 @keycloak_router.delete("/delete_user")
 @jwt_token("all_endpoints")
-async def api_create_user(request: Request):
+async def api_delete_user(request: Request):
     try:
         data = await request.json()
         username = data.get("username")
