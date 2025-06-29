@@ -146,6 +146,7 @@ async def retrieve_user_policy(username, access_token=None):
 
     policy = None
     details = response.json()
+    print("policy details:", details)
     for detail in details:
         if detail["name"] == f"policy_user_{username}":
             policy = detail
