@@ -237,3 +237,74 @@ async def get_events(user_id=None, event_type=None, access_token=None):
         return response
     except Exception as e:
         raise e from e
+
+
+async def get_user_permissions_by_username(username: str, access_token=None):
+    """
+    Get all resources/permissions granted to a specific user by username.
+    
+    Args:
+        username (str): The username to get permissions for
+        access_token (str, optional): Access token for authentication
+        
+    Returns:
+        list: List of resource dictionaries with name and id that the user has permission to access
+    """
+    try:
+        permission_name = f"permission_user_{username}"
+        all_permissions = (await get_all_permissions(access_token)).json()
+        
+        # Find the user's permission
+        user_permission = None
+        for permission in all_permissions:
+            if permission.get("name") == permission_name:
+                user_permission = permission
+                break
+        
+        if not user_permission:
+            return []  # User has no permissions
+        
+        permission_id = user_permission.get("id")
+        
+        # Get resources in this permission
+        resources_response = await get_resources_in_permission(permission_id, access_token)
+        
+        if resources_response.status_code not in [200, 201, 204]:
+            raise HTTPException(status_code=resources_response.status_code, detail=resources_response.text)
+            
+        resources = resources_response.json()
+        
+        # Return the resource details
+        return resources
+        
+    except Exception as e:
+        raise e from e
+
+
+async def get_all_resources_detailed(access_token=None):
+    """
+    Get all resources with full details including type information.
+    
+    Args:
+        access_token (str, optional): Access token for authentication
+        
+    Returns:
+        dict: Dictionary mapping resource IDs to resource details including type
+    """
+    try:
+        headers, _ = await obtain_headers(access_token)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(base_url + ep_get_all_resources, headers=headers)
+
+        if response.status_code not in [200, 201, 204]:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+            
+        resource_details = response.json()
+        resources_dict = {}
+        for resource in resource_details:
+            resource_id = resource.get("_id")
+            if resource_id:
+                resources_dict[resource_id] = resource
+        return resources_dict
+    except Exception as e:
+        raise e from e

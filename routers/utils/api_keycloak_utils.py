@@ -505,3 +505,53 @@ async def get_login_events(username: str = None, access_token=None):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+async def get_user_permissions(username: str, access_token=None):
+    """
+    Get all permissions (resources) granted to a specific user.
+    
+    Args:
+        username (str): The username to get permissions for
+        access_token (str, optional): Access token for authentication
+        
+    Returns:
+        dict: Dictionary containing resource details and summary information
+    """
+    try:
+        # Get the raw resources data
+        resources = await get_user_permissions_by_username(username, access_token)
+        
+        if not resources:
+            return {
+                "username": username,
+                "total_permissions": 0,
+                "resources": []
+            }
+        
+        # Get detailed resource information including types
+        all_resources_detailed = await get_all_resources_detailed(access_token)
+        
+        # Format the response with resource names, IDs, and types
+        formatted_resources = []
+        for resource in resources:
+            resource_id = resource.get("_id")
+            resource_details = all_resources_detailed.get(resource_id, {})
+            
+            formatted_resources.append({
+                "resource_name": resource.get("name"),
+                "resource_id": resource_id,
+                "resource_type": resource_details.get("type", "unknown")
+            })
+        
+        return {
+            "username": username,
+            "total_permissions": len(formatted_resources),
+            "resources": formatted_resources
+        }
+        
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
