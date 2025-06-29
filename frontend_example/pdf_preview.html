@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Preview Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .pdf-viewer {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .pdf-header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .pdf-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .pdf-controls button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .pdf-controls button:hover {
+            background: #2980b9;
+        }
+        
+        .pdf-controls button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .pdf-toolbar {
+            background: #ecf0f1;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-info {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .zoom-controls button {
+            background: #34495e;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .pdf-content {
+            padding: 20px;
+            text-align: center;
+            min-height: 600px;
+            position: relative;
+        }
+        
+        .pdf-page {
+            margin: 0 auto 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            display: inline-block;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .pdf-page img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 2px solid #ddd;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+        }
+        
+        .search-container {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .search-button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .search-results {
+            padding: 10px 15px;
+            background: #e8f5e8;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-viewer">
+        <div class="pdf-header">
+            <div class="pdf-title" id="pdfTitle">PDF Preview</div>
+            <div class="pdf-controls">
+                <button onclick="loadPdfInfo()">Load PDF Info</button>
+                <button onclick="showLoadDialog()">Load PDF</button>
+            </div>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search in PDF...">
+            <button class="search-button" onclick="searchPdf()">Search</button>
+        </div>
+        
+        <div class="search-results" id="searchResults"></div>
+        
+        <div class="pdf-toolbar">
+            <div class="page-info">
+                Page <span id="currentPage">1</span> of <span id="totalPages">0</span>
+            </div>
+            <div class="zoom-controls">
+                <button onclick="zoomOut()">-</button>
+                <span id="zoomLevel">100%</span>
+                <button onclick="zoomIn()">+</button>
+            </div>
+        </div>
+        
+        <div class="pdf-content" id="pdfContent">
+            <div class="loading">Loading PDF...</div>
+        </div>
+        
+        <div class="pdf-toolbar">
+            <div>
+                <button id="prevBtn" onclick="prevPage()" disabled>Previous</button>
+                <button id="nextBtn" onclick="nextPage()" disabled>Next</button>
+            </div>
+            <div>
+                <button onclick="loadMorePages()">Load More Pages</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PDF viewer state
+        let pdfState = {
+            currentPath: '',
+            currentPage: 1,
+            totalPages: 0,
+            zoomLevel: 1.0,
+            quality: 'medium',
+            loadedPages: new Set(),
+            pdfInfo: null
+        };
+
+        // API base URL
+        const API_BASE = 'http://127.0.0.1:5000';
+
+        // Show simple dialog to input PDF path
+        function showLoadDialog() {
+            const path = prompt('Enter PDF file path (e.g., "docs/sample.pdf"):');
+            if (path) {
+                loadPdf(path);
+            }
+        }
+
+        // Load PDF info and first page
+        async function loadPdf(path) {
+            try {
+                pdfState.currentPath = path;
+                document.getElementById('pdfTitle').textContent = `Loading: ${path}`;
+                document.getElementById('pdfContent').innerHTML = '<div class="loading">Loading PDF info...</div>';
+
+                // Get PDF information
+                const pdfInfo = await getPdfInfo(path);
+                pdfState.pdfInfo = pdfInfo;
+                pdfState.totalPages = pdfInfo.page_count;
+                
+                document.getElementById('pdfTitle').textContent = pdfInfo.title || path;
+                document.getElementById('totalPages').textContent = pdfInfo.page_count;
+                
+                // Load first page
+                await loadPage(1);
+                updateNavigation();
+                
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                document.getElementById('pdfContent').innerHTML = 
+                    `<div class="error">Error loading PDF: ${error.message}</div>`;
+            }
+        }
+
+        // Get PDF information
+        async function getPdfInfo(path) {
+            const formData = new FormData();
+            formData.append('path', path);
+
+            const response = await fetch(`${API_BASE}/files/pdf_info`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.detail;
+        }
+
+        // Load a specific page
+        async function loadPage(pageNum) {
+            try {
+                if (pdfState.loadedPages.has(pageNum)) {
+                    scrollToPage(pageNum);
+                    return;
+                }
+
+                document.getElementById('pdfContent').innerHTML = 
+                    `<div class="loading">Loading page ${pageNum}...</div>`;
+
+                const pageData = await getPdfPage(pdfState.currentPath, pageNum, pdfState.quality, pdfState.zoomLevel);
+                
+                // Create page element
+                const pageElement = document.createElement('div');
+                pageElement.className = 'pdf-page';
+                pageElement.id = `page-${pageNum}`;
+                
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${pageData.image_data}`;
+                img.alt = `Page ${pageNum}`;
+                
+                pageElement.appendChild(img);
+                
+                // Clear loading and add page
+                document.getElementById('pdfContent').innerHTML = '';
+                document.getElementById('pdfContent').appendChild(pageElement);
+                
+                pdfState.loadedPages.add(pageNum);
+                pdfState.currentPage = pageNum;
+                document.getElementById('currentPage').textContent = pageNum;
+                
+            } catch (error) {
+                console.error('Error loading page:', error);
+                document.getElementById('pdfContent').innerHTML = 
+                    `<div class="error">Error loading page: ${error.message}</div>`;
+            }
+        }
+
+        // Get PDF page data
+        async function getPdfPage(path, pageNum, quality = 'medium', scale = 1.0) {
+            const formData = new FormData();
+            formData.append('path', path);
+            formData.append('page', pageNum.toString());
+            formData.append('quality', quality);
+            formData.append('scale', scale.toString());
+
+            const response = await fetch(`${API_BASE}/files/pdf_page`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.detail;
+        }
+
+        // Load multiple pages at once
+        async function loadMorePages() {
+            try {
+                const startPage = Math.max(1, pdfState.currentPage - 2);
+                const endPage = Math.min(pdfState.totalPages, pdfState.currentPage + 2);
+                
+                document.getElementById('pdfContent').innerHTML = 
+                    '<div class="loading">Loading pages...</div>';
+
+                const pagesData = await getPdfPagesRange(pdfState.currentPath, startPage, endPage, pdfState.quality, pdfState.zoomLevel);
+                
+                // Clear content and add all pages
+                const contentDiv = document.getElementById('pdfContent');
+                contentDiv.innerHTML = '';
+                
+                pagesData.pages.forEach(pageData => {
+                    const pageElement = document.createElement('div');
+                    pageElement.className = 'pdf-page';
+                    pageElement.id = `page-${pageData.page_number}`;
+                    
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${pageData.image_data}`;
+                    img.alt = `Page ${pageData.page_number}`;
+                    
+                    pageElement.appendChild(img);
+                    contentDiv.appendChild(pageElement);
+                    
+                    pdfState.loadedPages.add(pageData.page_number);
+                });
+                
+            } catch (error) {
+                console.error('Error loading pages:', error);
+                document.getElementById('pdfContent').innerHTML = 
+                    `<div class="error">Error loading pages: ${error.message}</div>`;
+            }
+        }
+
+        // Get multiple PDF pages
+        async function getPdfPagesRange(path, startPage, endPage, quality = 'medium', scale = 1.0) {
+            const formData = new FormData();
+            formData.append('path', path);
+            formData.append('start_page', startPage.toString());
+            formData.append('end_page', endPage.toString());
+            formData.append('quality', quality);
+            formData.append('scale', scale.toString());
+
+            const response = await fetch(`${API_BASE}/files/pdf_pages_range`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.detail;
+        }
+
+        // Search in PDF
+        async function searchPdf() {
+            const searchText = document.getElementById('searchInput').value.trim();
+            if (!searchText || !pdfState.currentPath) return;
+
+            try {
+                const searchResults = await searchPdfText(pdfState.currentPath, searchText);
+                displaySearchResults(searchResults);
+            } catch (error) {
+                console.error('Error searching PDF:', error);
+                document.getElementById('searchResults').innerHTML = 
+                    `<div class="error">Search error: ${error.message}</div>`;
+            }
+        }
+
+        // Search PDF text
+        async function searchPdfText(path, searchText) {
+            const formData = new FormData();
+            formData.append('path', path);
+            formData.append('search_text', searchText);
+
+            const response = await fetch(`${API_BASE}/files/pdf_search`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result.detail;
+        }
+
+        // Display search results
+        function displaySearchResults(searchResults) {
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (searchResults.total_matches === 0) {
+                resultsDiv.innerHTML = `No matches found for "${searchResults.search_text}"`;
+            } else {
+                resultsDiv.innerHTML = `
+                    Found ${searchResults.total_matches} matches on ${searchResults.pages_with_matches} pages.
+                    <button onclick="goToFirstMatch(${searchResults.results[0].page_number})">Go to first match</button>
+                `;
+            }
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        // Go to a specific page with search match
+        function goToFirstMatch(pageNum) {
+            loadPage(pageNum);
+        }
+
+        // Navigation functions
+        function prevPage() {
+            if (pdfState.currentPage > 1) {
+                loadPage(pdfState.currentPage - 1);
+                updateNavigation();
+            }
+        }
+
+        function nextPage() {
+            if (pdfState.currentPage < pdfState.totalPages) {
+                loadPage(pdfState.currentPage + 1);
+                updateNavigation();
+            }
+        }
+
+        function updateNavigation() {
+            document.getElementById('prevBtn').disabled = pdfState.currentPage <= 1;
+            document.getElementById('nextBtn').disabled = pdfState.currentPage >= pdfState.totalPages;
+        }
+
+        // Zoom functions
+        function zoomIn() {
+            pdfState.zoomLevel = Math.min(3.0, pdfState.zoomLevel + 0.25);
+            updateZoomDisplay();
+            reloadCurrentPage();
+        }
+
+        function zoomOut() {
+            pdfState.zoomLevel = Math.max(0.5, pdfState.zoomLevel - 0.25);
+            updateZoomDisplay();
+            reloadCurrentPage();
+        }
+
+        function updateZoomDisplay() {
+            document.getElementById('zoomLevel').textContent = Math.round(pdfState.zoomLevel * 100) + '%';
+        }
+
+        function reloadCurrentPage() {
+            pdfState.loadedPages.delete(pdfState.currentPage);
+            loadPage(pdfState.currentPage);
+        }
+
+        // Scroll to specific page
+        function scrollToPage(pageNum) {
+            const pageElement = document.getElementById(`page-${pageNum}`);
+            if (pageElement) {
+                pageElement.scrollIntoView({ behavior: 'smooth' });
+                pdfState.currentPage = pageNum;
+                document.getElementById('currentPage').textContent = pageNum;
+                updateNavigation();
+            }
+        }
+
+        // Load PDF info for testing
+        function loadPdfInfo() {
+            const path = prompt('Enter PDF file path for info (e.g., "docs/sample.pdf"):');
+            if (path) {
+                getPdfInfo(path).then(info => {
+                    alert(`PDF Info:\nPages: ${info.page_count}\nSize: ${Math.round(info.file_size / 1024)} KB\nTitle: ${info.title || 'No title'}`);
+                }).catch(error => {
+                    alert(`Error: ${error.message}`);
+                });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateZoomDisplay();
+        });
+    </script>
+</body>
+</html>
