@@ -103,8 +103,45 @@ async def assign_permission(resource_names: str, username: str, access_token=Non
             if not resource_id: raise Exception(f"resource_id not found against the resource: {resource}")
             new_resource_ids.append(resource_id)
 
-        policy_id = (await retrieve_user_policy(username)).get("id")
-        if not policy_id: raise Exception("policy_id not found against the given username")
+        # Try to retrieve user policy, create if it doesn't exist
+        user_policy = await retrieve_user_policy(username)
+        if not user_policy or not user_policy.get("id"):
+            # Policy doesn't exist, create it
+            print(f"User policy not found for {username}, creating new policy...")
+            
+            # Get user details to extract user ID
+            user_details_response = await retrieve_user_details(username)
+            if user_details_response.status_code not in [200, 201, 204]:
+                raise Exception(f"Failed to retrieve user details for {username}")
+            
+            user_details = user_details_response.json()
+            if not user_details:
+                raise Exception(f"User {username} not found")
+            
+            user_id = user_details[0].get("id")
+            if not user_id:
+                raise Exception(f"User ID not found for {username}")
+            
+            # Create the user policy
+            policy_payload = {
+                "name": f"policy_user_{username}",
+                "description": "",
+                "users": [user_id],
+                "logic": "POSITIVE"
+            }
+            
+            policy_response = await create_user_policy(policy_payload, access_token)
+            if policy_response.status_code not in [200, 201, 204]:
+                raise Exception(f"Failed to create user policy for {username}: {policy_response.text}")
+            
+            print(f"Successfully created user policy for {username}")
+            
+            # Retrieve the newly created policy to get its ID
+            user_policy = await retrieve_user_policy(username)
+            if not user_policy or not user_policy.get("id"):
+                raise Exception(f"Failed to retrieve newly created policy for {username}")
+        
+        policy_id = user_policy.get("id")
         
         permission_name = f"permission_user_{username}"
         all_permissions = (await get_all_permissions()).json()
