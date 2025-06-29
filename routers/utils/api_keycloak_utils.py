@@ -198,12 +198,41 @@ async def delete_user(username, access_token=None):
                 user_id = user.get("id")
                 break
         if not user_id: raise Exception(f"user with username {username} not found")
+        
+        cleanup_results = []
+        
+        # Step 1: Cleanup user permissions (if they exist)
+        try:
+            permission_result = await delete_permission(username, access_token)
+            cleanup_results.append("permission deleted")
+            print(f"Successfully deleted permissions for user: {username}")
+        except Exception as perm_error:
+            cleanup_results.append("permission not found or already deleted")
+            print(f"Warning: Could not delete permissions for user {username}: {perm_error}")
+        
+        # Step 2: Cleanup user policy (if it exists)
+        try:
+            user_policy = await retrieve_user_policy(username, access_token)
+            if user_policy and user_policy.get("id"):
+                policy_id = user_policy.get("id")
+                await delete_user_policy(policy_id, access_token)
+                cleanup_results.append("policy deleted")
+                print(f"Successfully deleted policy for user: {username}")
+            else:
+                cleanup_results.append("policy not found")
+                print(f"No policy found for user: {username}")
+        except Exception as policy_error:
+            cleanup_results.append("policy not found or already deleted")
+            print(f"Warning: Could not delete policy for user {username}: {policy_error}")
+        
+        # Step 3: Delete the user
         headers, _ = await obtain_headers(access_token)
         async with httpx.AsyncClient() as client:
             response = await client.delete(base_url + ep_delete_user.replace("[ENTER_USER_ID]", user_id), headers=headers)
         
         if response.status_code in [200, 201, 204]:
-            return "user deleted successfully"
+            cleanup_summary = ", ".join(cleanup_results)
+            return f"user deleted successfully ({cleanup_summary})"
         else:
             raise HTTPException(status_code=response.status_code, detail=response.text)
         
