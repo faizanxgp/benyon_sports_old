@@ -19,7 +19,7 @@ keycloak_router = APIRouter()
 
 
 @keycloak_router.delete("/delete_permission")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_delete_permission(request: Request):
     try:
         username = request.state.email
@@ -35,10 +35,10 @@ async def api_delete_permission(request: Request):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
-        
+
 
 @keycloak_router.post("/unassign_permission")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_unassign_permission(request: Request):
     try:
         payload = await request.json()
@@ -58,7 +58,7 @@ async def api_unassign_permission(request: Request):
 
 
 @keycloak_router.post("/assign_permission")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_assign_permission(request: Request):
     try:
         payload = await request.json()
@@ -82,7 +82,7 @@ async def api_assign_permission(request: Request):
         
 
 @keycloak_router.post("/create_user")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_create_user(request: Request):
     try:
         payload = await request.json()
@@ -104,7 +104,7 @@ async def api_create_user(request: Request):
         
 
 @keycloak_router.delete("/delete_user")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_delete_user(request: Request):
     try:
         data = await request.json()
@@ -319,7 +319,7 @@ async def api_logout_user(request: Request):
 
 
 @keycloak_router.get("/users_status")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_users_status(request: Request):
     try:
         details = await users_status()
@@ -400,7 +400,7 @@ async def api_replace_user_role(request: Request):
 
 
 @keycloak_router.post("/toggle_user_status")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_toggle_user_status(request: Request):
     """
     API endpoint to enable or disable a user in Keycloak.
@@ -440,7 +440,7 @@ async def api_toggle_user_status(request: Request):
 
 
 @keycloak_router.post("/login_events")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_login_events(request: Request):
     """
     API endpoint to retrieve LOGIN events for a specific user or all users.
@@ -475,7 +475,7 @@ async def api_login_events(request: Request):
 
 
 @keycloak_router.post("/get_user_permissions")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_get_user_permissions(request: Request):
     """
     API endpoint to retrieve all permissions (resources) granted to a specific user.
@@ -512,7 +512,7 @@ async def api_get_user_permissions(request: Request):
 
 
 @keycloak_router.post("/create_resource")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_create_resource(request: Request):
     """
     API endpoint to create a new resource in Keycloak.

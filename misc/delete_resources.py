@@ -23,7 +23,7 @@ from routers.utils.keycloak_vars import *
 # List of resource names that should NOT be deleted
 PROTECTED_RESOURCES = [
     ".",
-    "all_endpoints"
+    "admin"
 ]
 
 # Configuration for concurrent operations

@@ -161,7 +161,7 @@ def search_files_and_folders(root, query, case_sensitive=False):
     return matches
 
 
-def has_hierarchical_permission(target_path, permissions):
+def has_hierarchical_permission(target_path, permissions, roles):
     """
     Check if the target_path has permission based on hierarchical access.
     A user with permission to a parent directory should have access to all subdirectories and files.
@@ -173,6 +173,11 @@ def has_hierarchical_permission(target_path, permissions):
     Returns:
         bool: True if access is granted, False otherwise
     """
+    
+    if "admin" in roles:
+        # If user has admin role, grant access to everything
+        return True
+    
     # Normalize the target path
     if target_path == '.':
         target_path = ''
@@ -200,19 +205,24 @@ def has_hierarchical_permission(target_path, permissions):
     return False
 
 
-async def dir_contents_details(abs_path, permissions):
+async def dir_contents_details(abs_path: str, permissions: list, roles: list):
     try:
         # permissions
         base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
         relative_path = str(Path(os.path.relpath(abs_path, base_dir)).as_posix())
-        print('relative_path:', relative_path)
-        print('permissions:', permissions)
+        # print('relative_path:', relative_path)
+        # print('permissions:', permissions)
         
         # Modified directory-level permission check:
         # Allow access to a directory if:
         # 1. User has direct permission to this directory, OR
         # 2. User has permission to any subdirectory within this directory (for browsing)
-        def can_access_directory(dir_path, perms):
+        def can_access_directory(dir_path, perms, roles):
+            
+            if "admin" in roles:
+                print("admin role detected, granting access to all directories")
+                return True
+            
             # Direct permission to this directory
             if has_hierarchical_permission(dir_path, perms):
                 return True
@@ -231,16 +241,16 @@ async def dir_contents_details(abs_path, permissions):
             return False
         
         # Check if user can access this directory
-        if not can_access_directory(relative_path, permissions):
+        if not can_access_directory(relative_path, permissions, roles):
             return []  # Return empty list if no permission to access this directory
         
         results = []
         for entry in os.listdir(abs_path):
             entry_relative_path = f"{relative_path}/{entry}" if relative_path != '.' else entry
-            print('entry_relative_path:', entry_relative_path)
+            # print('entry_relative_path:', entry_relative_path)
             
             # Use hierarchical permission checking
-            if not has_hierarchical_permission(entry_relative_path, permissions):
+            if not has_hierarchical_permission(entry_relative_path, permissions, roles):
                 continue
             entry_path = os.path.join(abs_path, entry)
             p = Path(entry_path)
