@@ -405,14 +405,30 @@ async def retrieve_user_details(username, access_token=None):
         raise e from e
 
 
-async def reset_password(payload, user_id, access_token=None):
+
+async def reset_password(payload, user_id=None, access_token=None):
+    """
+    Resets the password for the user specified by username in payload.
+    If user_id is not provided, retrieves it using the username from payload.
+    """
+    # If user_id is not provided, get it from username in payload
+    if not user_id:
+        username = payload.get("username")
+        if not username:
+            raise HTTPException(status_code=400, detail="Username is required for password reset")
+        user_details_response = await retrieve_user_details(username)
+        user_details = user_details_response.json()
+        if not user_details or not user_details[0].get("id"):
+            raise HTTPException(status_code=404, detail="User not found")
+        user_id = user_details[0]["id"]
+        # Remove username from payload before sending to Keycloak
+        payload = {k: v for k, v in payload.items() if k != "username"}
     headers, _ = await obtain_headers(access_token)
     async with httpx.AsyncClient() as client:
         response = await client.put(
-            base_url + ep_reset_password.replace("[ENTER_USER_ID]", user_id), 
+            base_url + ep_reset_password.replace("[ENTER_USER_ID]", user_id),
             json=payload, headers=headers
-            )
-
+        )
     return response
 
 
