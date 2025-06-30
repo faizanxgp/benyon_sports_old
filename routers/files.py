@@ -69,8 +69,8 @@ async def api_download_file(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
     
     
-@files_router.post("/delete")
-@jwt_token("all_endpoints")
+@files_router.delete("/delete")
+@jwt_token("admin")
 async def api_delete_file_and_dir(request: Request):
     try:
         data = await request.form()
@@ -81,7 +81,7 @@ async def api_delete_file_and_dir(request: Request):
     
     
 @files_router.post("/create_dir")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_create_dir(request: Request):
     try:
         data = await request.form()
@@ -94,7 +94,7 @@ async def api_create_dir(request: Request):
 
 
 @files_router.post("/upload") # TODO: what if duplicate filenames?
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_upload_files(request: Request):
     try:
         data = await request.form()
@@ -110,10 +110,10 @@ async def api_upload_files(request: Request):
 @jwt_token("")
 async def api_dir_contents(request: Request):
     try:
-        print(request.state.permissions)
+        # print(request.state.permissions)
         data = await request.form()
         path = data.get("path")
-        results = await dir_contents(path, request.state.permissions)
+        results = await dir_contents(path, request.state.permissions, request.state.roles)
 
         return {"detail": results}
     
@@ -140,7 +140,7 @@ async def api_file_preview(request: Request):
 
 
 @files_router.post("/upload_multiple")
-@jwt_token("all_endpoints")
+@jwt_token("admin")
 async def api_upload_multiple_folders(request: Request):
     """
     Upload multiple folders with complex directory structures.

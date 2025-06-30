@@ -124,7 +124,7 @@ async def search_files(search_str: str):
         raise e
 
 
-async def dir_contents(path: str, permissions):
+async def dir_contents(path: str, permissions: list, roles: list):
     try:
         base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
         relative_path = path.lstrip("/\\")
@@ -132,9 +132,9 @@ async def dir_contents(path: str, permissions):
         p_abs_path = Path(abs_path)
         if not p_abs_path.is_dir(): raise HTTPException(status_code=404, detail="path does not exist")
         print("permissions:", permissions)
-        results = await dir_contents_details(abs_path, permissions)
+        results = await dir_contents_details(abs_path, permissions, roles)
         return results
-    
+
     except Exception as e:
         raise e from e
 

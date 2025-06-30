@@ -1,6 +1,7 @@
 import jwt
 import json
 import time
+import traceback
 
 from functools import wraps
 from decouple import Config, RepositoryEnv
@@ -38,7 +39,7 @@ async def keycloak_verif(token:str):
     return intr_tok, permissions
 
 
-def jwt_token(required_permission: str):
+def jwt_token(required_role: str):
     def decorator(fn):
         @wraps(fn)
         async def decorated(request: Request, *args, **kwargs):
@@ -55,12 +56,16 @@ def jwt_token(required_permission: str):
         
             try:
                 intr_tok, permissions = await keycloak_verif(token_from_request)                
-                if required_permission:
-                    if (required_permission not in permissions) and ("api_all_endpoints" not in permissions):
-                        print("required permission:", required_permission)
-                        print("permissions:", permissions)
-                        raise Exception("auth token: insufficient permission(s)")
+                # if required_permission:
+                #     if (required_permission not in permissions) and ("api_all_endpoints" not in permissions):
+                #         print("required permission:", required_permission)
+                #         print("permissions:", permissions)
+                #         raise Exception("auth token: insufficient permission(s)")
                 request.state.permissions = permissions
+                request.state.roles = intr_tok.get("resource_access", {}).get("benyon_fe", {}).get("roles", [])
+                if required_role:
+                    if required_role not in request.state.roles:
+                        raise Exception("auth token: insufficient rights")
             
                 user_id, user_name, user_email = intr_tok.get("sub"), intr_tok.get("name"), intr_tok.get("email")
 
@@ -69,7 +74,8 @@ def jwt_token(required_permission: str):
                 request.state.email = user_email
 
             except Exception as e:
-                print(f"\n{datetime.now()} jwt_token. error: type: {type(e)}, details: {str(e)}\n")
+                tb_str = traceback.format_exc()
+                print(f"\n{datetime.now()} jwt_token. error: {tb_str}\n")
                 if isinstance(e, (InvalidJWSObject, InvalidJWSSignature)):
                     raise HTTPException(status_code = 401, detail = "error: invalid auth token")
                 elif isinstance(e, (JWTExpired)):
