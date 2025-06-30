@@ -270,26 +270,19 @@ async def assign_permission(resources: list, username: str, access_token=None):
 async def create_user(payload, access_token=None):
     try:
         headers, _ = await obtain_headers(access_token)
-        if role := payload.get("role"):
-            del payload["role"]
+        role = payload.pop("role", None)
+        password = payload.pop("password", None)
         if not payload.get("username"):
             payload["username"] = payload.get("email")
+        username = payload["username"]
+        
+        # create user in keycloak
         async with httpx.AsyncClient() as client:
             response = await client.post(base_url + ep_create_user, json=payload, headers=headers)
-        
         if response.status_code not in [200, 201, 204]:
             raise HTTPException(status_code=response.status_code, detail=response.text)
         
-        if not role: return response
-        
-        username = payload.get("username")
-        user_id = (await retrieve_user_details(username)).json()[0].get("id")
-        role_id = (await get_client_role(role)).json().get("id")
-        role_payload = [{
-            "id": role_id,
-            "name": role
-            }]
-        role_response = await assign_client_role(role_payload, user_id)
+        # create policy for the user
         policy_payload = (
             {
                 "name":f"policy_user_{payload.get('username')}",
@@ -298,8 +291,34 @@ async def create_user(payload, access_token=None):
                 "logic":"POSITIVE"
             }
         )
-        await create_user_policy(policy_payload)
-        return role_response
+        response = await create_user_policy(policy_payload)
+        if response.status_code not in [200, 201, 204]:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+                
+        # set the role for the user
+        username = payload.get("username")
+        user_id = (await retrieve_user_details(username)).json()[0].get("id")
+        role_id = (await get_client_role(role)).json().get("id")
+        role_payload = [{
+            "id": role_id,
+            "name": role
+            }]
+        response = await assign_client_role(role_payload, user_id)
+        if response.status_code not in [200, 201, 204]:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+        
+        # set password for the user
+        password_payload = {
+                            "username": username,
+                            "type": "password",
+                            "value": password,
+                            "temporary": False
+                        }
+        response = await reset_password(password_payload)
+        if response.status_code not in [200, 201, 204]:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+        
+        return response
     except Exception as e:
         raise e from e
 
@@ -405,17 +424,15 @@ async def retrieve_user_details(username, access_token=None):
         raise e from e
 
 
-
 async def reset_password(payload, user_id=None, access_token=None):
     """
-    Resets the password for the user specified by username in payload.
-    If user_id is not provided, retrieves it using the username from payload.
+    Resets the password for the user specified by username in payload or by user_id.
     """
-    # If user_id is not provided, get it from username in payload
     if not user_id:
         username = payload.get("username")
         if not username:
-            raise HTTPException(status_code=400, detail="Username is required for password reset")
+            raise HTTPException(status_code=400, detail="username required")
+        # retrieve user_id from keycloak
         user_details_response = await retrieve_user_details(username)
         user_details = user_details_response.json()
         if not user_details or not user_details[0].get("id"):
