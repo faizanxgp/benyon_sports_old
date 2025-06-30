@@ -224,7 +224,7 @@ async def dir_contents_details(abs_path: str, permissions: list, roles: list):
                 return True
             
             # Direct permission to this directory
-            if has_hierarchical_permission(dir_path, perms):
+            if has_hierarchical_permission(dir_path, perms, roles):
                 return True
             
             # Check if user has permission to any subdirectory within this directory

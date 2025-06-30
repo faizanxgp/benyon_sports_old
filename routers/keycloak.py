@@ -226,25 +226,22 @@ async def api_retrieve_user_details(request: Request):
             raise HTTPException(status_code=500, detail=str(e))
 
 
-# TODO: this approach needs to be changed - not secure
+
+# Now takes username as input, retrieves user_id inside reset_password
 @keycloak_router.post("/reset_password")
 @jwt_token("")
 async def api_reset_password(request: Request):
     try:
-        user_id = request.state.user_id # action carried out by concerned user (non-admin)
         payload = await request.json()
-        response:httpx.Response = await reset_password(payload, user_id)
-        
+        response: httpx.Response = await reset_password(payload)
         if response.status_code in [200, 201, 204]:
             return {"detail": "password reset successfully"}
         else:
             raise HTTPException(status_code=response.status_code, detail=response.text)
-    
     except Exception as e:
         tb_str = traceback.format_exc()
         print(f"reset_password. error: {tb_str}")
-        
-        if isinstance (e, HTTPException):
+        if isinstance(e, HTTPException):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
