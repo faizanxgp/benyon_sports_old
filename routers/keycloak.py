@@ -79,7 +79,7 @@ async def api_assign_permission(request: Request):
             raise e
         else:
             raise HTTPException(status_code=500, detail=str(e))
-        
+
 
 @keycloak_router.post("/create_user")
 @jwt_token("admin")
@@ -88,10 +88,10 @@ async def api_create_user(request: Request):
         payload = await request.json()
         response = await create_user(payload)
         
-        if response.status_code in [200, 201, 204]:
-            return {"detail": "user created successfully"}
-        else:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
+        # if response.status_code in [200, 201, 204]:
+        #     return {"detail": "user created successfully"}
+        # else:
+        #     raise HTTPException(status_code=response.status_code, detail=response.text)
     
     except Exception as e:
         tb_str = traceback.format_exc()
@@ -226,10 +226,32 @@ async def api_retrieve_user_details(request: Request):
             raise HTTPException(status_code=500, detail=str(e))
 
 
-
-# Now takes username as input, retrieves user_id inside reset_password
+# if action carried out by concerned user (non-admin)
 @keycloak_router.post("/reset_password")
 @jwt_token("")
+async def api_reset_password(request: Request):
+    try:
+        user_id = request.state.user_id
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID not found in request state")
+        payload = await request.json()
+        response: httpx.Response = await reset_password(payload, user_id)
+        if response.status_code in [200, 201, 204]:
+            return {"detail": "password reset successfully"}
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"reset_password. error: {tb_str}")
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+# if action carried out by admin
+@keycloak_router.post("/admin_reset_password")
+@jwt_token("admin")
 async def api_reset_password(request: Request):
     try:
         payload = await request.json()
