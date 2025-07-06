@@ -462,3 +462,81 @@ async def update_user_recent_file_attribute(user_id: str, username: str, file_pa
     except Exception as e:
         # Log the error but don't fail the download
         print(f"Error updating user attributes in Keycloak for user {user_id}: {str(e)}")
+
+
+def scan_recently_modified_files(root_dir, cutoff_criteria=3):
+    """
+    Recursively scan directory structure to find files modified after a certain point.
+    
+    Args:
+        root_dir: Root directory to start scanning from
+        cutoff_criteria: Either an integer (days to look back) or a datetime object (cutoff timestamp)
+    
+    Returns:
+        List of dictionaries containing file information:
+        [
+            {
+                "path": "relative/path/to/file.ext",
+                "absolute_path": "/full/path/to/file.ext", 
+                "last_modified": "2025-07-01T10:30:45+00:00",
+                "size_bytes": 1024
+            },
+            ...
+        ]
+    """
+    recently_modified_files = []
+    
+    # Determine cutoff time based on the type of cutoff_criteria
+    if isinstance(cutoff_criteria, datetime.datetime):
+        # If it's already a datetime object, use it directly
+        cutoff_time = cutoff_criteria
+        # Ensure it has timezone info
+        if cutoff_time.tzinfo is None:
+            cutoff_time = cutoff_time.replace(tzinfo=datetime.timezone.utc)
+    else:
+        # If it's an integer (days), calculate cutoff datetime
+        days = int(cutoff_criteria)
+        cutoff_time = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(days=days)
+    
+    try:
+        base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
+        
+        for dirpath, dirnames, filenames in os.walk(root_dir):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                try:
+                    # Get file statistics
+                    st = os.stat(file_path)
+                    
+                    # Convert modification time to UTC datetime
+                    file_mod_time = datetime.datetime.fromtimestamp(
+                        st.st_mtime, tz=datetime.timezone.utc
+                    )
+                    
+                    # Check if file was modified within the specified time window
+                    if file_mod_time >= cutoff_time:
+                        # Calculate relative path from the base "remote" directory
+                        relative_path = os.path.relpath(file_path, base_dir)
+                        # Convert backslashes to forward slashes for cross-platform compatibility
+                        relative_path = relative_path.replace(os.sep, '/')
+                        
+                        recently_modified_files.append({
+                            "path": relative_path,
+                            "absolute_path": file_path,
+                            "last_modified": file_mod_time.isoformat(),
+                            "size_bytes": st.st_size
+                        })
+                        
+                except (OSError, PermissionError) as e:
+                    # Skip files that can't be accessed
+                    print(f"Could not access file {file_path}: {e}")
+                    continue
+    
+    except Exception as e:
+        print(f"Error scanning directory {root_dir}: {e}")
+        raise e
+    
+    # Sort by modification time (newest first)
+    recently_modified_files.sort(key=lambda x: x["last_modified"], reverse=True)
+    
+    return recently_modified_files

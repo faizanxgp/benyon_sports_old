@@ -37,6 +37,9 @@ from routers.utils.api_files_utils import (
     get_pptx_slide
 )
 
+# Import the new functions for newly added files
+from routers.utils.api_files_utils import get_newly_added_files, get_newly_added_files_since_timestamp
+
 files_router = APIRouter()
 
 
@@ -410,4 +413,48 @@ async def api_pptx_slide(request: Request):
     except Exception as e:
         tb_str = traceback.format_exc()
         print(f"Error getting PPTX slide {slide_num} for {path}: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.post("/newly_added_files")
+@jwt_token("")
+async def api_newly_added_files(request: Request):
+    """Get a list of newly added files since a given timestamp"""
+    try:
+        data = await request.form()
+        timestamp = data.get("timestamp")
+        
+        if not timestamp:
+            raise HTTPException(status_code=400, detail="timestamp field is required")
+        
+        # Convert timestamp to datetime object
+        timestamp_dt = datetime.fromisoformat(timestamp)
+        
+        newly_added = await get_newly_added_files_since_timestamp(timestamp_dt)
+        return JSONResponse(content={"detail": newly_added})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting newly added files: {tb_str}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@files_router.get("/newly_added")
+@jwt_token("")
+async def api_newly_added_files(request: Request):
+    """Get files that have been modified within the last 3 days"""
+    try:
+        # Get optional 'days' parameter from query params, default to 3
+        days_param = request.query_params.get("days", "3")
+        try:
+            days = int(days_param)
+            if days < 1:
+                days = 3  # Default to 3 if invalid value
+        except ValueError:
+            days = 3  # Default to 3 if not a valid integer
+        
+        newly_added = await get_newly_added_files(days)
+        return JSONResponse(content={"detail": newly_added})
+    except Exception as e:
+        tb_str = traceback.format_exc()
+        print(f"Error getting newly added files: {tb_str}")
         raise HTTPException(status_code=500, detail=str(e))
