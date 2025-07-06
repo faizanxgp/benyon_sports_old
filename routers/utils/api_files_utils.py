@@ -774,3 +774,48 @@ async def get_pptx_slide(path, slide_num):
         return {"slide": slide_num, "html": html}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading PPTX slide: {str(e)}")
+
+async def get_newly_added_files(cutoff_criteria=3):
+    """
+    Get files that have been modified within the last 'days' days or after a specific timestamp.
+    
+    Args:
+        cutoff_criteria: Either an integer (days to look back) or a datetime object (cutoff timestamp)
+    
+    Returns:
+        List of recently modified files with their details
+    """
+    try:
+        base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
+        
+        if not os.path.exists(base_dir):
+            raise HTTPException(status_code=404, detail="Remote directory does not exist")
+        
+        recently_modified = scan_recently_modified_files(base_dir, cutoff_criteria)
+        return recently_modified
+        
+    except Exception as e:
+        raise e
+
+
+async def get_newly_added_files_since_timestamp(timestamp_dt):
+    """
+    Get files that have been modified since a specific timestamp.
+    
+    Args:
+        timestamp_dt: datetime object representing the cutoff timestamp
+    
+    Returns:
+        List of recently modified files with their details
+    """
+    try:
+        base_dir = os.path.normpath(os.path.join(os.getcwd(), "remote"))
+        
+        if not os.path.exists(base_dir):
+            raise HTTPException(status_code=404, detail="Remote directory does not exist")
+        
+        recently_modified = scan_recently_modified_files(base_dir, timestamp_dt)
+        return recently_modified
+        
+    except Exception as e:
+        raise e
